@@ -1,8 +1,8 @@
 # Binaries and build outputs
 /dist/
 /bin/
-learn-linux
-learn-linux.exe
+/learn-linux
+/learn-linux.exe
 *.test
 *.out
 coverage.txt

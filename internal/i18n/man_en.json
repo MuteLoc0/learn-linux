@@ -1,0 +1,800 @@
+{
+  "ls": {
+    "name": "ls",
+    "summary": "List files and directories",
+    "synopsis": "ls [OPTIONS]... [PATH]...",
+    "description": "Displays the entries inside the given directory (defaults to the current directory). Combine -a to reveal dotfiles and -l to inspect permissions, size, and timestamps.",
+    "options": [
+      { "flag": "-a", "desc": "Show all entries, including hidden dotfiles starting with '.'" },
+      { "flag": "-l", "desc": "Use long listing format (permissions, owner, size, modified time)" },
+      { "flag": "-h", "desc": "With -l, print human-readable sizes (K, M, G)" },
+      { "flag": "-1", "desc": "List one entry per line" }
+    ],
+    "examples": [
+      { "cmd": "ls -la", "desc": "Show detailed listing of all files including hidden ones" },
+      { "cmd": "ls -lh logs/", "desc": "Inspect logs/ with human-readable file sizes" },
+      { "cmd": "ls -a", "desc": "Reveal hidden dotfiles in the current directory" }
+    ],
+    "see_also": ["tree", "cd", "pwd", "stat"]
+  },
+  "cd": {
+    "name": "cd",
+    "summary": "Change the current working directory",
+    "synopsis": "cd [DIRECTORY]",
+    "description": "Moves your shell session to another directory using a relative path, absolute path, or shorthand (~ for home, .. for parent directory, - for previous directory).",
+    "options": [
+      { "flag": "~", "desc": "Jump to your home directory (same as running cd with no arguments)" },
+      { "flag": "..", "desc": "Move up one level to the parent directory" },
+      { "flag": "-", "desc": "Switch back to the previous working directory" }
+    ],
+    "examples": [
+      { "cmd": "cd workspace/project", "desc": "Enter the relative directory workspace/project" },
+      { "cmd": "cd ..", "desc": "Move up to the parent directory" },
+      { "cmd": "cd ~", "desc": "Return directly to /home/learner" }
+    ],
+    "see_also": ["pwd", "ls", "tree"]
+  },
+  "pwd": {
+    "name": "pwd",
+    "summary": "Print the current working directory",
+    "synopsis": "pwd",
+    "description": "Prints the full absolute path of your current location in the filesystem (Print Working Directory). Useful whenever you want to confirm where you are.",
+    "options": [],
+    "examples": [
+      { "cmd": "pwd", "desc": "Display the current absolute directory path" },
+      { "cmd": "cd project && pwd", "desc": "Enter project and immediately verify the new path" }
+    ],
+    "see_also": ["cd", "ls", "tree"]
+  },
+  "tree": {
+    "name": "tree",
+    "summary": "Display directory hierarchy as an indented tree",
+    "synopsis": "tree [OPTIONS] [DIRECTORY]",
+    "description": "Recursively prints a visual tree of directories and files along with a summary count at the bottom—great for orienting yourself inside an unfamiliar workspace.",
+    "options": [
+      { "flag": "-a", "desc": "Include hidden files and directories in the output" },
+      { "flag": "-L <depth>", "desc": "Limit maximum display depth of the directory tree" },
+      { "flag": "-d", "desc": "List directories only" }
+    ],
+    "examples": [
+      { "cmd": "tree", "desc": "Show the full directory tree from the current folder" },
+      { "cmd": "tree -L 2 src", "desc": "Display up to 2 levels deep inside src" },
+      { "cmd": "tree -a", "desc": "Show the tree including hidden dotfiles" }
+    ],
+    "see_also": ["ls", "find", "pwd"]
+  },
+  "mkdir": {
+    "name": "mkdir",
+    "summary": "Create one or more directories",
+    "synopsis": "mkdir [OPTIONS] DIRECTORY...",
+    "description": "Creates new directories at the given paths. Pass -p whenever you need to create nested parent directories in a single step.",
+    "options": [
+      { "flag": "-p", "desc": "Create missing parent directories as needed; no error if already present" }
+    ],
+    "examples": [
+      { "cmd": "mkdir lab", "desc": "Create a single directory named lab" },
+      { "cmd": "mkdir -p lab/docs/archive", "desc": "Create nested directories in one command" }
+    ],
+    "see_also": ["touch", "rm", "cp", "mv"]
+  },
+  "touch": {
+    "name": "touch",
+    "summary": "Create an empty file or update its timestamp",
+    "synopsis": "touch FILE...",
+    "description": "Creates a zero-byte file if the target path does not exist. If the file already exists, updates its modification time without altering its contents.",
+    "options": [],
+    "examples": [
+      { "cmd": "touch notes.md", "desc": "Create an empty file named notes.md" },
+      { "cmd": "touch a.txt b.txt c.txt", "desc": "Create multiple empty files at once" }
+    ],
+    "see_also": ["mkdir", "nano", "stat", "rm"]
+  },
+  "cp": {
+    "name": "cp",
+    "summary": "Copy files and directories",
+    "synopsis": "cp [OPTIONS] SOURCE DEST",
+    "description": "Duplicates one or more files to a destination path. To copy an entire directory and its contents, include the -r (recursive) flag.",
+    "options": [
+      { "flag": "-r, -R", "desc": "Copy directories and their contents recursively" },
+      { "flag": "-v", "desc": "Print each file as it is copied" }
+    ],
+    "examples": [
+      { "cmd": "cp app.conf app.conf.bak", "desc": "Create a backup copy of a config file" },
+      { "cmd": "cp -r templates lab/templates_backup", "desc": "Recursively copy the templates directory" }
+    ],
+    "see_also": ["mv", "rm", "mkdir", "ln"]
+  },
+  "mv": {
+    "name": "mv",
+    "summary": "Move or rename files and directories",
+    "synopsis": "mv SOURCE DEST",
+    "description": "Relocates a file or directory to a new path, or renames it in place. If DEST is an existing directory, SOURCE is moved inside it.",
+    "options": [
+      { "flag": "-v", "desc": "Explain what is being moved or renamed" }
+    ],
+    "examples": [
+      { "cmd": "mv draft.txt report.txt", "desc": "Rename draft.txt to report.txt" },
+      { "cmd": "mv inbox/report_draft.txt lab/docs/report.txt", "desc": "Move and rename a file in one step" }
+    ],
+    "see_also": ["cp", "rm", "ln"]
+  },
+  "rm": {
+    "name": "rm",
+    "summary": "Remove files or directories",
+    "synopsis": "rm [OPTIONS] PATH...",
+    "description": "Permanently deletes files or directories without sending them to a trash bin. Always double-check paths before running; add -r to remove directories.",
+    "options": [
+      { "flag": "-r, -R", "desc": "Recursively remove directories and everything inside them" },
+      { "flag": "-f", "desc": "Force removal, ignoring nonexistent files without prompting" }
+    ],
+    "examples": [
+      { "cmd": "rm inbox/junk.tmp", "desc": "Delete a single temporary file" },
+      { "cmd": "rm -rf build_cache/", "desc": "Forcefully remove an entire directory tree" }
+    ],
+    "see_also": ["mv", "cp", "mkdir"]
+  },
+  "ln": {
+    "name": "ln",
+    "summary": "Create symbolic or hard links between files",
+    "synopsis": "ln [OPTIONS] TARGET LINK_NAME",
+    "description": "Creates a link pointing to an existing file or directory. Symbolic links (-s) act like shortcuts and can point across directories.",
+    "options": [
+      { "flag": "-s", "desc": "Create a symbolic link (symlink) instead of a hard link" },
+      { "flag": "-f", "desc": "Overwrite an existing link at LINK_NAME" }
+    ],
+    "examples": [
+      { "cmd": "ln -s docs/report.txt lab/current_report", "desc": "Create a symlink pointing to docs/report.txt" },
+      { "cmd": "ls -l lab/current_report", "desc": "Inspect where the symbolic link points" }
+    ],
+    "see_also": ["ls", "cp", "stat"]
+  },
+  "cat": {
+    "name": "cat",
+    "summary": "Concatenate and print file contents",
+    "synopsis": "cat [OPTIONS] [FILE]...",
+    "description": "Reads one or more files and writes their contents sequentially to standard output. Great for short files or combining multiple files with > redirection.",
+    "options": [
+      { "flag": "-n", "desc": "Number all output lines" }
+    ],
+    "examples": [
+      { "cmd": "cat app.conf", "desc": "Display the entire contents of app.conf" },
+      { "cmd": "cat events/notes_*.txt > combined.txt", "desc": "Merge matching text files into combined.txt" },
+      { "cmd": "cat -n main.c", "desc": "Print source code with line numbers" }
+    ],
+    "see_also": ["less", "head", "tail", "echo"]
+  },
+  "head": {
+    "name": "head",
+    "summary": "Output the first lines of a file",
+    "synopsis": "head [-n NUM] [FILE]...",
+    "description": "Prints the first 10 lines of each file (or standard input) by default—handy for previewing CSV headers or large log files without flooding your terminal.",
+    "options": [
+      { "flag": "-n <num>", "desc": "Print the first <num> lines instead of the default 10" }
+    ],
+    "examples": [
+      { "cmd": "head logs/server.log", "desc": "Preview the first 10 lines of a log file" },
+      { "cmd": "head -n 5 data/users.csv", "desc": "Show only the first 5 lines of a CSV file" }
+    ],
+    "see_also": ["tail", "cat", "less", "wc"]
+  },
+  "tail": {
+    "name": "tail",
+    "summary": "Output the last lines of a file",
+    "synopsis": "tail [-n NUM] [FILE]...",
+    "description": "Prints the last 10 lines of each file (or standard input) by default. Ideal for checking the most recent events in a log file.",
+    "options": [
+      { "flag": "-n <num>", "desc": "Print the last <num> lines instead of the default 10" }
+    ],
+    "examples": [
+      { "cmd": "tail logs/server.log", "desc": "Show the final 10 lines of server.log" },
+      { "cmd": "tail -n 20 logs/server.log", "desc": "Show the last 20 lines of server.log" }
+    ],
+    "see_also": ["head", "less", "grep", "wc"]
+  },
+  "wc": {
+    "name": "wc",
+    "summary": "Count lines, words, and bytes in files",
+    "synopsis": "wc [OPTIONS] [FILE]...",
+    "description": "Counts newline, word, and byte totals for files or piped input. Frequently paired with grep in a pipeline to count matching lines.",
+    "options": [
+      { "flag": "-l", "desc": "Print only the line count" },
+      { "flag": "-w", "desc": "Print only the word count" },
+      { "flag": "-c", "desc": "Print only the byte count" }
+    ],
+    "examples": [
+      { "cmd": "wc -l logs/server.log", "desc": "Count total lines in logs/server.log" },
+      { "cmd": "grep ERROR logs/server.log | wc -l", "desc": "Count how many lines contain ERROR" }
+    ],
+    "see_also": ["cat", "grep", "sort", "uniq"]
+  },
+  "sort": {
+    "name": "sort",
+    "summary": "Sort lines of text",
+    "synopsis": "sort [OPTIONS] [FILE]...",
+    "description": "Orders lines of text alphabetically, numerically, or in reverse. Typically placed before uniq when deduplicating unsorted data.",
+    "options": [
+      { "flag": "-r", "desc": "Reverse the sort order (descending)" },
+      { "flag": "-n", "desc": "Compare lines by numeric value" },
+      { "flag": "-u", "desc": "Sort and remove duplicate lines in one step" }
+    ],
+    "examples": [
+      { "cmd": "sort data/users.csv", "desc": "Sort CSV lines alphabetically" },
+      { "cmd": "sort data/users.csv | uniq", "desc": "Sort lines and collapse duplicates" },
+      { "cmd": "sort -rn scores.txt", "desc": "Sort numbers from highest to lowest" }
+    ],
+    "see_also": ["uniq", "cut", "grep", "wc"]
+  },
+  "uniq": {
+    "name": "uniq",
+    "summary": "Filter or count adjacent duplicate lines",
+    "synopsis": "uniq [OPTIONS] [FILE]",
+    "description": "Collapses or counts consecutive identical lines. Because uniq only checks adjacent lines, sort your input first to deduplicate globally.",
+    "options": [
+      { "flag": "-c", "desc": "Prefix each line with its occurrence count" },
+      { "flag": "-d", "desc": "Print only lines that appear more than once" },
+      { "flag": "-i", "desc": "Ignore case when comparing lines" }
+    ],
+    "examples": [
+      { "cmd": "sort data/users.csv | uniq", "desc": "Sort and remove all duplicate rows" },
+      { "cmd": "sort errors.txt | uniq -c", "desc": "Count how many times each unique error occurred" }
+    ],
+    "see_also": ["sort", "cut", "grep", "wc"]
+  },
+  "cut": {
+    "name": "cut",
+    "summary": "Extract selected fields or character ranges from each line",
+    "synopsis": "cut -d <DELIM> -f <FIELDS> [FILE]...",
+    "description": "Slices specific columns from delimited text such as CSV files, logs, or colon-separated records.",
+    "options": [
+      { "flag": "-d <delim>", "desc": "Use <delim> as the field delimiter (default: Tab)" },
+      { "flag": "-f <fields>", "desc": "Select field numbers to print (e.g., 1, 1,3, or 2-4)" },
+      { "flag": "-c <range>", "desc": "Select specific character positions (e.g., 1-10)" }
+    ],
+    "examples": [
+      { "cmd": "cut -d , -f 1 data/users.csv", "desc": "Extract the first column (usernames) from a CSV" },
+      { "cmd": "cut -d : -f 1,3 /etc/passwd", "desc": "Print the 1st and 3rd colon-delimited columns" }
+    ],
+    "see_also": ["sort", "uniq", "grep", "cat"]
+  },
+  "echo": {
+    "name": "echo",
+    "summary": "Display a line of text or variable value",
+    "synopsis": "echo [OPTIONS] [STRING]...",
+    "description": "Writes its arguments to standard output and expands shell variables such as $HOME or $BUILD_MODE. Often paired with > or >> to write text to files.",
+    "options": [
+      { "flag": "-n", "desc": "Do not output the trailing newline" },
+      { "flag": "-e", "desc": "Interpret backslash escapes such as \\n and \\t" }
+    ],
+    "examples": [
+      { "cmd": "echo \"Hello, Linux!\"", "desc": "Print a message to the terminal" },
+      { "cmd": "echo '--- END ---' >> errors.txt", "desc": "Append a footer line to errors.txt" },
+      { "cmd": "echo $BUILD_MODE", "desc": "Print the value of the BUILD_MODE environment variable" }
+    ],
+    "see_also": ["printf", "cat", "export", "env"]
+  },
+  "printf": {
+    "name": "printf",
+    "summary": "Format and print text according to a template",
+    "synopsis": "printf FORMAT [ARGS]...",
+    "description": "Offers precise C-style formatting with placeholders like %s, %d, and explicit \\n newlines. Unlike echo, printf does not append a newline automatically.",
+    "options": [],
+    "examples": [
+      { "cmd": "printf \"User: %s\\n\" \"$USER\"", "desc": "Print a formatted string with a newline" },
+      { "cmd": "printf \"%s=%d\\n\" port 9000", "desc": "Output a formatted key=value line" }
+    ],
+    "see_also": ["echo", "cat"]
+  },
+  "stat": {
+    "name": "stat",
+    "summary": "Display detailed file or directory metadata",
+    "synopsis": "stat PATH...",
+    "description": "Shows low-level attributes of a path including file type, byte size, octal and symbolic permission bits, owner, and timestamps.",
+    "options": [],
+    "examples": [
+      { "cmd": "stat build/compile.sh", "desc": "Inspect permissions and metadata of a script" },
+      { "cmd": "stat lab/current_report", "desc": "Inspect metadata of a symbolic link" }
+    ],
+    "see_also": ["ls", "chmod", "file", "touch"]
+  },
+  "file": {
+    "name": "file",
+    "summary": "Determine a file's type",
+    "synopsis": "file PATH...",
+    "description": "Inspects a path and reports whether it is plain text, a shell script, a directory, a symbolic link, a gzip archive, or an executable binary.",
+    "options": [],
+    "examples": [
+      { "cmd": "file project/app", "desc": "Check whether project/app is an executable" },
+      { "cmd": "file project/assets.tar.gz", "desc": "Identify a compressed tar.gz archive" }
+    ],
+    "see_also": ["stat", "ls"]
+  },
+  "grep": {
+    "name": "grep",
+    "summary": "Search for lines matching a pattern",
+    "synopsis": "grep [OPTIONS] PATTERN [PATH]...",
+    "description": "Filters lines from files, piped input, or entire directory trees (-r) that match a literal string or regular expression.",
+    "options": [
+      { "flag": "-r, -R", "desc": "Recursively search all files under a directory" },
+      { "flag": "-n", "desc": "Prefix each matching line with its line number" },
+      { "flag": "-i", "desc": "Perform case-insensitive matching" },
+      { "flag": "-v", "desc": "Invert match: show lines that do NOT match" },
+      { "flag": "-c", "desc": "Print only the count of matching lines" }
+    ],
+    "examples": [
+      { "cmd": "grep -rn ERROR src", "desc": "Recursively search src/ for ERROR with line numbers" },
+      { "cmd": "grep CRITICAL release_prep/logs/deploy.log > release_prep/critical.txt", "desc": "Extract CRITICAL log lines into a new file" },
+      { "cmd": "grep -i warn logs/server.log", "desc": "Case-insensitive search for warnings" }
+    ],
+    "see_also": ["find", "sort", "uniq", "wc"]
+  },
+  "find": {
+    "name": "find",
+    "summary": "Search for files and directories in a hierarchy",
+    "synopsis": "find [START_PATH] [EXPRESSION]",
+    "description": "Walks a directory tree recursively and prints paths matching filename patterns, file types, or depth limits.",
+    "options": [
+      { "flag": "-name <pattern>", "desc": "Match filenames with wildcards (quote patterns like '*.yaml')" },
+      { "flag": "-iname <pattern>", "desc": "Case-insensitive filename match" },
+      { "flag": "-type <f|d|l>", "desc": "Filter by type: f=file, d=directory, l=symlink" },
+      { "flag": "-maxdepth <N>", "desc": "Descend at most N directory levels" }
+    ],
+    "examples": [
+      { "cmd": "find src -name '*.yaml'", "desc": "Find all .yaml files anywhere under src" },
+      { "cmd": "find . -type d", "desc": "List every subdirectory beneath the current folder" },
+      { "cmd": "find . -maxdepth 2 -name '*.log'", "desc": "Find .log files up to 2 levels deep" }
+    ],
+    "see_also": ["grep", "tree", "ls"]
+  },
+  "chmod": {
+    "name": "chmod",
+    "summary": "Change file or directory permissions",
+    "synopsis": "chmod <MODE> PATH...",
+    "description": "Modifies read (r=4), write (w=2), and execute (x=1) permissions using either symbolic notation (+x, u+w) or octal digits (755, 644).",
+    "options": [
+      { "flag": "+x / -x", "desc": "Add or remove execute permission" },
+      { "flag": "755", "desc": "Owner rwx, group and others r-x (standard for scripts)" },
+      { "flag": "644", "desc": "Owner rw-, group and others r-- (standard for text files)" },
+      { "flag": "-R", "desc": "Apply permission changes recursively" }
+    ],
+    "examples": [
+      { "cmd": "chmod +x build/compile.sh", "desc": "Make build/compile.sh executable" },
+      { "cmd": "chmod 755 release_prep/scripts/compile.sh", "desc": "Set permissions to rwxr-xr-x using octal mode" }
+    ],
+    "see_also": ["ls", "stat", "sh", "bash"]
+  },
+  "which": {
+    "name": "which",
+    "summary": "Locate the executable path of a command",
+    "synopsis": "which COMMAND...",
+    "description": "Shows the path that would be executed when running a command name, helping verify availability and precedence.",
+    "options": [],
+    "examples": [
+      { "cmd": "which grep", "desc": "Locate the grep command" },
+      { "cmd": "which gcc make", "desc": "Check paths for multiple build tools" }
+    ],
+    "see_also": ["env", "alias", "man"]
+  },
+  "tar": {
+    "name": "tar",
+    "summary": "Create, inspect, or extract archive files",
+    "synopsis": "tar [OPTIONS] <ARCHIVE> [PATH...]",
+    "description": "Bundles files and directories into a single .tar archive, and with -z transparently compresses or decompresses using gzip (.tar.gz).",
+    "options": [
+      { "flag": "-c", "desc": "Create a new archive" },
+      { "flag": "-x", "desc": "Extract files from an archive" },
+      { "flag": "-t", "desc": "List archive contents without extracting" },
+      { "flag": "-z", "desc": "Filter the archive through gzip" },
+      { "flag": "-f <file>", "desc": "Specify the archive filename (keep this last in combined flags)" },
+      { "flag": "-v", "desc": "Verbosely list processed files" },
+      { "flag": "-C <dir>", "desc": "Change to <dir> before archiving or extracting" }
+    ],
+    "examples": [
+      { "cmd": "tar -czf assets.tar.gz assets", "desc": "Compress the assets directory into assets.tar.gz" },
+      { "cmd": "tar -xzf assets.tar.gz -C /home/learner/extracted", "desc": "Extract an archive into a target directory" },
+      { "cmd": "tar -tzf assets.tar.gz", "desc": "Preview files stored inside assets.tar.gz" }
+    ],
+    "see_also": ["gzip", "gunzip", "ls", "file"]
+  },
+  "gzip": {
+    "name": "gzip",
+    "summary": "Compress a single file using gzip",
+    "synopsis": "gzip [OPTIONS] FILE...",
+    "description": "Compresses files into .gz archives in place. Use -d to decompress or -k to keep the original file alongside the compressed output.",
+    "options": [
+      { "flag": "-d", "desc": "Decompress a .gz file (same as gunzip)" },
+      { "flag": "-k", "desc": "Keep the original input file intact" },
+      { "flag": "-c", "desc": "Write compressed output to standard output" }
+    ],
+    "examples": [
+      { "cmd": "gzip server.log", "desc": "Compress server.log into server.log.gz" },
+      { "cmd": "gzip -dk server.log.gz", "desc": "Decompress while preserving the .gz file" }
+    ],
+    "see_also": ["gunzip", "tar", "file"]
+  },
+  "gunzip": {
+    "name": "gunzip",
+    "summary": "Decompress .gz files",
+    "synopsis": "gunzip [OPTIONS] FILE.gz...",
+    "description": "Restores gzip-compressed files back to their original form. Equivalent to running gzip -d.",
+    "options": [
+      { "flag": "-k", "desc": "Keep the original .gz file after decompressing" },
+      { "flag": "-c", "desc": "Write decompressed content to standard output" }
+    ],
+    "examples": [
+      { "cmd": "gunzip server.log.gz", "desc": "Decompress server.log.gz back to server.log" },
+      { "cmd": "gunzip -k backup.txt.gz", "desc": "Decompress without deleting the archive" }
+    ],
+    "see_also": ["gzip", "tar"]
+  },
+  "gcc": {
+    "name": "gcc",
+    "summary": "Compile C source files into an executable (simulated toolchain)",
+    "synopsis": "gcc [-o OUTPUT] SOURCE.c...",
+    "description": "Provides a lightweight virtual C compiler so you can practice standard compile-and-run workflows inside the sandbox without needing host compilers.",
+    "options": [
+      { "flag": "-o <file>", "desc": "Write the compiled executable to <file> (defaults to a.out)" },
+      { "flag": "-Wall", "desc": "Enable standard compiler warnings" }
+    ],
+    "examples": [
+      { "cmd": "gcc -o app src/main.c", "desc": "Compile src/main.c into executable ./app" },
+      { "cmd": "./app", "desc": "Run the compiled program" }
+    ],
+    "see_also": ["make", "chmod", "file"]
+  },
+  "make": {
+    "name": "make",
+    "summary": "Run automated build targets defined in a Makefile",
+    "synopsis": "make [TARGET]",
+    "description": "Reads the Makefile in the current directory and runs its build or cleanup recipes automatically so you don't have to retype long compiler invocations.",
+    "options": [
+      { "flag": "clean", "desc": "Common target that removes build artifacts" }
+    ],
+    "examples": [
+      { "cmd": "make", "desc": "Build the default target defined in Makefile" },
+      { "cmd": "make clean", "desc": "Remove generated build outputs" }
+    ],
+    "see_also": ["gcc", "cat", "chmod"]
+  },
+  "less": {
+    "name": "less",
+    "summary": "Interactive terminal pager for reading long files",
+    "synopsis": "less FILE",
+    "description": "Displays text one screen at a time with smooth scrolling and pattern search—far cleaner than cat for large log files.",
+    "options": [
+      { "flag": "j / k or ↑ / ↓", "desc": "Scroll down or up one line" },
+      { "flag": "Space / b", "desc": "Page forward or backward" },
+      { "flag": "/pattern", "desc": "Search forward; press n / N for next or previous match" },
+      { "flag": "q", "desc": "Quit less and return to the shell prompt" }
+    ],
+    "examples": [
+      { "cmd": "less logs/server.log", "desc": "Browse a server log interactively" },
+      { "cmd": "less app.conf", "desc": "Inspect a configuration file read-only" }
+    ],
+    "see_also": ["cat", "head", "tail", "nano"]
+  },
+  "nano": {
+    "name": "nano",
+    "summary": "Beginner-friendly terminal text editor",
+    "synopsis": "nano FILE",
+    "description": "Opens an intuitive full-screen editor with on-screen shortcut hints at the bottom. Ideal for quickly editing configuration files or scripts.",
+    "options": [
+      { "flag": "Ctrl+O", "desc": "Save changes to disk (Write Out)" },
+      { "flag": "Ctrl+X", "desc": "Exit nano (prompts to save if modified)" }
+    ],
+    "examples": [
+      { "cmd": "nano app.conf", "desc": "Edit app.conf directly in the terminal" },
+      { "cmd": "nano release_prep/config/env.conf", "desc": "Update environment settings before release" }
+    ],
+    "see_also": ["less", "cat", "touch"]
+  },
+  "env": {
+    "name": "env",
+    "summary": "Print all active environment variables",
+    "synopsis": "env",
+    "description": "Lists every exported KEY=VALUE variable in the current shell session. Helpful when debugging PATH, HOME, or application configuration variables.",
+    "options": [],
+    "examples": [
+      { "cmd": "env", "desc": "List all exported environment variables" },
+      { "cmd": "env | grep BUILD", "desc": "Filter environment variables containing BUILD" }
+    ],
+    "see_also": ["export", "unset", "echo"]
+  },
+  "export": {
+    "name": "export",
+    "summary": "Set and export environment variables for child processes",
+    "synopsis": "export NAME=VALUE",
+    "description": "Assigns a variable and marks it for export so scripts and commands invoked afterward can read it.",
+    "options": [
+      { "flag": "-p", "desc": "Display all exported variables in reusable format" }
+    ],
+    "examples": [
+      { "cmd": "export BUILD_MODE=release", "desc": "Export BUILD_MODE set to release" },
+      { "cmd": "export APP_ENV=prod && ./compile.sh", "desc": "Export a flag and immediately run a build script" }
+    ],
+    "see_also": ["env", "unset", "echo"]
+  },
+  "unset": {
+    "name": "unset",
+    "summary": "Remove environment or shell variables",
+    "synopsis": "unset NAME...",
+    "description": "Deletes one or more variables from the current shell environment so subsequent commands no longer see them.",
+    "options": [],
+    "examples": [
+      { "cmd": "unset BUILD_MODE", "desc": "Remove BUILD_MODE from the environment" },
+      { "cmd": "unset FOO BAR", "desc": "Remove multiple variables at once" }
+    ],
+    "see_also": ["export", "env", "echo"]
+  },
+  "alias": {
+    "name": "alias",
+    "summary": "Create short aliases for frequently used commands",
+    "synopsis": "alias [NAME='COMMAND']",
+    "description": "Maps a short name to a longer command string to save typing. Run alias with no arguments to list all currently defined aliases.",
+    "options": [],
+    "examples": [
+      { "cmd": "alias ll='ls -la'", "desc": "Define ll as shorthand for ls -la" },
+      { "cmd": "alias", "desc": "Show all active aliases in this session" }
+    ],
+    "see_also": ["unalias", "which", "history"]
+  },
+  "unalias": {
+    "name": "unalias",
+    "summary": "Remove defined command aliases",
+    "synopsis": "unalias [-a] NAME...",
+    "description": "Deletes one or more aliases previously created with alias, or clears every alias when called with -a.",
+    "options": [
+      { "flag": "-a", "desc": "Remove all defined aliases" }
+    ],
+    "examples": [
+      { "cmd": "unalias ll", "desc": "Remove the ll alias" },
+      { "cmd": "unalias -a", "desc": "Clear all custom aliases" }
+    ],
+    "see_also": ["alias", "which"]
+  },
+  "history": {
+    "name": "history",
+    "summary": "Display previously executed commands",
+    "synopsis": "history [N]",
+    "description": "Lists your command history in chronological order so you can review earlier steps. You can also press ↑ / ↓ to cycle through previous commands directly.",
+    "options": [],
+    "examples": [
+      { "cmd": "history", "desc": "Show all recorded commands in this session" },
+      { "cmd": "history | grep tar", "desc": "Find previous tar commands you ran" }
+    ],
+    "see_also": ["alias", "clear"]
+  },
+  "clear": {
+    "name": "clear",
+    "summary": "Clear the terminal screen",
+    "synopsis": "clear",
+    "description": "Wipes prior output from the terminal viewport and moves the prompt back to the top. Ctrl+L performs the same action.",
+    "options": [],
+    "examples": [
+      { "cmd": "clear", "desc": "Clear the terminal screen" },
+      { "cmd": "clear && mission", "desc": "Clear the screen and reprint current objectives" }
+    ],
+    "see_also": ["history", "mission"]
+  },
+  "whoami": {
+    "name": "whoami",
+    "summary": "Print the current effective username",
+    "synopsis": "whoami",
+    "description": "Outputs the account name of the current shell user—useful when confirming identity on multi-user Linux systems.",
+    "options": [],
+    "examples": [
+      { "cmd": "whoami", "desc": "Print the current username (learner)" },
+      { "cmd": "echo \"Current user: $(whoami)\"", "desc": "Embed the username inside a shell message" }
+    ],
+    "see_also": ["id", "hostname", "uname"]
+  },
+  "hostname": {
+    "name": "hostname",
+    "summary": "Print the system's host name",
+    "synopsis": "hostname",
+    "description": "Displays the network name of the current Linux host so you always know which machine you are working on.",
+    "options": [],
+    "examples": [
+      { "cmd": "hostname", "desc": "Display the virtual machine's hostname" },
+      { "cmd": "whoami && hostname", "desc": "Check both the active username and host name" }
+    ],
+    "see_also": ["uname", "whoami", "id"]
+  },
+  "uname": {
+    "name": "uname",
+    "summary": "Print operating system and kernel information",
+    "synopsis": "uname [OPTIONS]",
+    "description": "Displays kernel name, release version, hostname, and machine architecture.",
+    "options": [
+      { "flag": "-a", "desc": "Print all available system information" },
+      { "flag": "-s", "desc": "Print the kernel name (Linux)" },
+      { "flag": "-r", "desc": "Print the kernel release version" },
+      { "flag": "-m", "desc": "Print the machine hardware architecture" }
+    ],
+    "examples": [
+      { "cmd": "uname -a", "desc": "Show full virtual Linux kernel and architecture details" },
+      { "cmd": "uname -sr", "desc": "Show only kernel name and release version" }
+    ],
+    "see_also": ["hostname", "whoami", "date"]
+  },
+  "date": {
+    "name": "date",
+    "summary": "Print the current system date and time",
+    "synopsis": "date [+FORMAT]",
+    "description": "Outputs the current date and time, optionally formatted using strftime-style codes prefixed with '+' (handy for timestamped backups).",
+    "options": [
+      { "flag": "-u", "desc": "Display time in Coordinated Universal Time (UTC)" }
+    ],
+    "examples": [
+      { "cmd": "date", "desc": "Print the current local date and time" },
+      { "cmd": "date +%Y-%m-%d", "desc": "Print today's date in YYYY-MM-DD format" }
+    ],
+    "see_also": ["uname", "stat"]
+  },
+  "id": {
+    "name": "id",
+    "summary": "Print user and group IDs",
+    "synopsis": "id [OPTIONS]",
+    "description": "Displays your numeric user ID (UID), primary group ID (GID), and supplementary groups—useful for understanding file ownership and permissions.",
+    "options": [
+      { "flag": "-u", "desc": "Print only the effective user ID" },
+      { "flag": "-g", "desc": "Print only the effective primary group ID" },
+      { "flag": "-n", "desc": "With -u or -g, print a name instead of a number" }
+    ],
+    "examples": [
+      { "cmd": "id", "desc": "Show complete UID, GID, and group memberships" },
+      { "cmd": "id -un", "desc": "Print only the effective username" }
+    ],
+    "see_also": ["whoami", "chmod", "stat"]
+  },
+  "sh": {
+    "name": "sh",
+    "summary": "Execute a shell script or command string using POSIX sh",
+    "synopsis": "sh [SCRIPT] | sh -c 'COMMAND'",
+    "description": "Runs a script file or inline command string in the virtual shell interpreter. Can execute a script even before chmod +x is applied.",
+    "options": [
+      { "flag": "-c <command>", "desc": "Execute the specified command string" }
+    ],
+    "examples": [
+      { "cmd": "sh build/compile.sh", "desc": "Run a script explicitly with sh" },
+      { "cmd": "sh -c 'echo hello && pwd'", "desc": "Execute an inline command in a subshell" }
+    ],
+    "see_also": ["bash", "chmod", "export"]
+  },
+  "bash": {
+    "name": "bash",
+    "summary": "Execute a script or command string using Bash",
+    "synopsis": "bash [SCRIPT] | bash -c 'COMMAND'",
+    "description": "Invokes the virtual Bash interpreter to run a script file or inline command string with full support for pipes, redirections, variables, and chaining.",
+    "options": [
+      { "flag": "-c <command>", "desc": "Execute the specified command string" }
+    ],
+    "examples": [
+      { "cmd": "bash release_prep/scripts/compile.sh", "desc": "Execute a build script with bash" },
+      { "cmd": "bash -c 'ls -la | wc -l'", "desc": "Run a pipeline inside a sub-bash process" }
+    ],
+    "see_also": ["sh", "chmod", "env"]
+  },
+  "mission": {
+    "name": "mission",
+    "summary": "Display current chapter overview and objectives",
+    "synopsis": "mission",
+    "description": "Reprints the active chapter's description, featured commands, and live checklist of completed and remaining goals.",
+    "options": [],
+    "examples": [
+      { "cmd": "mission", "desc": "Review the current chapter's objectives and status" },
+      { "cmd": "clear && mission", "desc": "Clear clutter and view the current mission cleanly" }
+    ],
+    "see_also": ["check", "hint", "chapter"]
+  },
+  "hint": {
+    "name": "hint",
+    "summary": "Reveal the next progressive hint for the current chapter",
+    "synopsis": "hint",
+    "description": "Each invocation reveals the next hint—starting from high-level pointers and progressing to concrete command examples.",
+    "options": [],
+    "examples": [
+      { "cmd": "hint", "desc": "Show the next step-by-step clue" },
+      { "cmd": "mission && hint", "desc": "Review objectives and immediately inspect the next hint" }
+    ],
+    "see_also": ["mission", "check", "man"]
+  },
+  "check": {
+    "name": "check",
+    "summary": "Verify all objectives for the current chapter",
+    "synopsis": "check",
+    "description": "Evaluates the virtual filesystem, environment variables, and command history to report which chapter goals have passed and which remain.",
+    "options": [],
+    "examples": [
+      { "cmd": "check", "desc": "Run an immediate progress check for the current chapter" },
+      { "cmd": "ls -la && check", "desc": "Inspect your files and verify chapter goals" }
+    ],
+    "see_also": ["mission", "hint", "reset"]
+  },
+  "chapter": {
+    "name": "chapter",
+    "summary": "List all chapters or switch to a specific chapter",
+    "synopsis": "chapter [1-8]",
+    "description": "Run without arguments to view all 8 curriculum chapters and your completion status; pass a number (1–8) to load that chapter's fresh environment.",
+    "options": [],
+    "examples": [
+      { "cmd": "chapter", "desc": "Show the full chapter list and progress" },
+      { "cmd": "chapter 2", "desc": "Jump to Chapter 2 (File & Directory Management)" }
+    ],
+    "see_also": ["mission", "sandbox", "reset"]
+  },
+  "reset": {
+    "name": "reset",
+    "summary": "Restore the current chapter or sandbox to its initial state",
+    "synopsis": "reset",
+    "description": "Instantly rebuilds the virtual filesystem for the current chapter or sandbox if files were accidentally deleted or altered. Your overall completion progress is kept.",
+    "options": [],
+    "examples": [
+      { "cmd": "reset", "desc": "Reset all files in the current chapter cleanly" },
+      { "cmd": "reset && tree", "desc": "Reset the chapter and inspect the fresh file layout" }
+    ],
+    "see_also": ["chapter", "mission", "sandbox"]
+  },
+  "sandbox": {
+    "name": "sandbox",
+    "summary": "Enter the unrestricted free practice sandbox",
+    "synopsis": "sandbox",
+    "description": "Switches to an open virtual Linux workspace pre-populated with sample files and scripts—no graded objectives, ideal for free experimentation.",
+    "options": [],
+    "examples": [
+      { "cmd": "sandbox", "desc": "Switch to free practice sandbox mode" },
+      { "cmd": "sandbox && ls -la", "desc": "Enter the sandbox and inspect its sample files" }
+    ],
+    "see_also": ["chapter", "reset", "help"]
+  },
+  "man": {
+    "name": "man",
+    "summary": "Read concise bilingual manual pages for built-in commands",
+    "synopsis": "man [COMMAND]",
+    "description": "Shows a beginner-friendly manual entry (synopsis, options, and practical examples) for any built-in command. Run 'man' with no arguments to list all documented commands.",
+    "options": [],
+    "examples": [
+      { "cmd": "man grep", "desc": "Read the simplified manual for grep" },
+      { "cmd": "man", "desc": "List all commands with built-in manual pages" }
+    ],
+    "see_also": ["help", "lang", "which"]
+  },
+  "lang": {
+    "name": "lang",
+    "summary": "Switch interface, curriculum, and manual language",
+    "synopsis": "lang <zh|en>",
+    "description": "Toggles all UI prompts, chapter descriptions, hints, and man pages between Simplified Chinese (zh) and English (en) immediately and saves your preference.",
+    "options": [
+      { "flag": "zh", "desc": "Switch to Simplified Chinese" },
+      { "flag": "en", "desc": "Switch to English" }
+    ],
+    "examples": [
+      { "cmd": "lang en", "desc": "Switch immediately to English" },
+      { "cmd": "lang zh", "desc": "Switch immediately to Simplified Chinese" }
+    ],
+    "see_also": ["help", "man", "mission"]
+  },
+  "help": {
+    "name": "help",
+    "summary": "Show LearnLinux tutorial commands and keyboard shortcuts",
+    "synopsis": "help",
+    "description": "Prints a concise overview of all tutorial commands (mission, hint, check, chapter, reset, etc.) and essential terminal shortcuts.",
+    "options": [],
+    "examples": [
+      { "cmd": "help", "desc": "Display the quick help reference" },
+      { "cmd": "man", "desc": "Browse all built-in Linux command manual pages" }
+    ],
+    "see_also": ["man", "mission", "lang"]
+  },
+  "exit": {
+    "name": "exit",
+    "summary": "Save your progress and exit LearnLinux",
+    "synopsis": "exit",
+    "description": "Cleanly exits the virtual terminal after persisting your completed chapters, preferred language, and command history. Pressing Ctrl+D on an empty line also exits.",
+    "options": [],
+    "examples": [
+      { "cmd": "exit", "desc": "Save progress and quit the program" },
+      { "cmd": "check && exit", "desc": "Verify chapter progress before exiting" }
+    ],
+    "see_also": ["help", "chapter"]
+  }
+}
