@@ -30,10 +30,6 @@ func validateSyntax(node syntax.Node) error {
 		switch node := node.(type) {
 		case *syntax.ProcSubst:
 			err = fmt.Errorf("%s: process substitution is unavailable in the virtual shell", node.Pos())
-		case *syntax.UnaryTest:
-			if node.Op == syntax.TsUsrOwn || node.Op == syntax.TsGrpOwn {
-				err = fmt.Errorf("%s: use test for virtual file ownership checks", node.Pos())
-			}
 		case *syntax.Word:
 			err = validateTilde(node)
 		case *syntax.DeclClause:
@@ -68,7 +64,7 @@ func validateDeclaration(decl *syntax.DeclClause) error {
 		if !static {
 			return fmt.Errorf("%s: use a literal variable name in %s assignments", arg.Pos(), decl.Variant.Value)
 		}
-		fields, err := expand.Fields(nil, arg.Value)
+		fields, err := expand.Fields(&expand.Config{VirtualFS: true}, arg.Value)
 		if err != nil {
 			return err
 		}

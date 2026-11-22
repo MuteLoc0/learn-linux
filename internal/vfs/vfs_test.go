@@ -272,7 +272,7 @@ func TestOpenFile(t *testing.T) {
 func TestShellRedirects(t *testing.T) {
 	v := vfs.NewMemVFS()
 	var stdout, stderr bytes.Buffer
-	runner, err := interp.New(interp.Dir("/"), interp.StdIO(nil, &stdout, &stderr),
+	runner, err := interp.New(interp.VirtualDir("/"), interp.StdIO(nil, &stdout, &stderr),
 		interp.OpenHandler(func(_ context.Context, p string, flag int, perm os.FileMode) (io.ReadWriteCloser, error) {
 			return v.OpenFile(p, flag, perm)
 		}))

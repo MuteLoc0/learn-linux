@@ -88,7 +88,7 @@ func TestEndToEndAllChaptersAndFeatures(t *testing.T) {
 	typeCmd(&events, "chapter 5")
 	typeCmd(&events, "grep ERROR events/app.log | sort | uniq > errors.txt")
 	typeCmd(&events, "echo \"--- END ---\" >> errors.txt")
-	typeCmd(&events, "cat events/notes_*.txt > combined.txt")
+	typeCmd(&events, "cd events && cat notes_*.txt > ../combined.txt; cd")
 	typeCmd(&events, "mkdir -p done_dir && touch done_dir/ok.txt")
 
 	// Chapter 6: Permissions, Env & Running Scripts
@@ -111,12 +111,13 @@ func TestEndToEndAllChaptersAndFeatures(t *testing.T) {
 	typeCmd(&events, "printf \"ENV=prod\\nLOG_LEVEL=info\\n\" > release_prep/config/env.conf")
 	typeCmd(&events, "chmod +x release_prep/scripts/compile.sh && ./release_prep/scripts/compile.sh")
 	typeCmd(&events, "./release_prep/dist/service")
-	typeCmd(&events, "tar -czf /home/learner/release_v2.tar.gz -C release_prep dist")
+	typeCmd(&events, "cd release_prep && tar -czf /home/learner/release_v2.tar.gz dist; cd")
 
 	// Extra feature checks: lang toggle, man, help, chapter list, soft-lock + reset, sandbox, rm -rf / panic!
 	typeCmd(&events, "lang en")
 	typeCmd(&events, "man ls")
 	typeCmd(&events, "help")
+	typeCmd(&events, "help cd")
 	typeCmd(&events, "chapter list")
 	typeCmd(&events, "rm release_prep/src/app.c")
 	typeCmd(&events, "reset")
@@ -157,6 +158,9 @@ func TestEndToEndAllChaptersAndFeatures(t *testing.T) {
 	}
 
 	out := mockTerm.Output.String()
+	if count := strings.Count(out, "LearnLinux Help"); count != 2 {
+		t.Errorf("expected tutorial help from both invocations, got %d help screens", count)
+	}
 	for _, mustContain := range []string{
 		"LearnLinux v1.0",
 		"欢迎来到LearnLinux，一个虚拟化的终端界面，不会影响任何宿主机文件。",

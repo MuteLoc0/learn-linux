@@ -92,10 +92,9 @@ func (e entry) create(kind contract.FileType, mode fs.FileMode) *node {
 // lookup requires the caller to hold the filesystem lock. When only the
 // final component is missing, it also returns the location for creation.
 func (v *MemVFS) lookup(p string, followFinal bool) (entry, error) {
-	p = absolutePath("/", p)
 	var parts []string
-	if p != "/" {
-		parts = strings.Split(p[1:], "/")
+	if p = strings.Trim(p, "/"); p != "" {
+		parts = strings.Split(p, "/")
 	}
 	ancestors := []*node{v.root}
 	hops := 0

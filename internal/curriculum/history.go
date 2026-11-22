@@ -56,12 +56,13 @@ func rawCommand(raw, name string, checkArgs func([]string) bool) bool {
 	if !strings.Contains(raw, name) {
 		return false
 	}
+	cfg := &expand.Config{VirtualFS: true}
 	return matchSyntax(raw, func(node syntax.Node) bool {
 		call, ok := node.(*syntax.CallExpr)
 		if !ok || len(call.Args) == 0 {
 			return false
 		}
-		command, err := expand.Literal(nil, call.Args[0])
+		command, err := expand.Literal(cfg, call.Args[0])
 		if err != nil || path.Base(command) != name {
 			return false
 		}
@@ -70,7 +71,7 @@ func rawCommand(raw, name string, checkArgs func([]string) bool) bool {
 		}
 		args := make([]string, 0, len(call.Args)-1)
 		for _, word := range call.Args[1:] {
-			arg, _ := expand.Literal(nil, word)
+			arg, _ := expand.Literal(cfg, word)
 			args = append(args, arg)
 		}
 		return checkArgs(args)

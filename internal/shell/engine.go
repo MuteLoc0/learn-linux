@@ -41,6 +41,7 @@ type Engine struct {
 	cwd          string
 	vars         shellEnv
 	aliases      map[string]string
+	dirStack     []string
 	history      []string
 	lastStatus   int
 	dirRevision  uint64
@@ -121,6 +122,7 @@ func (e *Engine) SetVFS(vfs contract.VFS, cwd string) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.vfs = vfs
+	e.dirStack = nil
 	e.dirRevision++
 	e.setCWD(cwd)
 }

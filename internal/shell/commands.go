@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"runtime"
+	"path"
 	"slices"
 	"strconv"
 	"strings"
 
 	"learn-linux/internal/contract"
+	"learn-linux/internal/vfs"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
 )
@@ -60,11 +61,22 @@ func (s *execution) exec(ctx context.Context, args []string) error {
 		if len(rest) == 0 {
 			return diagnostic(hc.Stderr, name, 2, "filename argument required")
 		}
-		data, err := s.vfs.ReadFile(s.resolve(hc.Dir, rest[0]))
+		filename := s.lookPath(hc, rest[0], false)
+		if filename == "" {
+			filename = vfs.FilePath(hc.Dir, rest[0])
+		}
+		if filename == "" {
+			return diagnostic(hc.Stderr, name, 1, "%s", fileError(contract.ErrNotExist))
+		}
+		data, err := s.vfs.ReadFile(filename)
 		if err != nil {
 			return diagnostic(hc.Stderr, name, 1, "%s: %s", rest[0], fileError(err))
 		}
-		return s.eval(ctx, hc, name, string(data))
+		file, err := parseScript(string(data), filename)
+		if err != nil {
+			return diagnostic(hc.Stderr, name, 2, "%v", err)
+		}
+		return hc.Source(ctx, file, rest[1:])
 	case "eval":
 		return s.eval(ctx, hc, name, strings.Join(rest, " "))
 	case "trap":
@@ -81,8 +93,6 @@ func (s *execution) exec(ctx context.Context, args []string) error {
 			}
 		}
 		return hc.Builtin(ctx, args)
-	case "test", "[":
-		return s.test(ctx, hc, args)
 	case "unset":
 		for _, arg := range rest {
 			key, index, ok := strings.Cut(arg, "[")
@@ -102,7 +112,7 @@ func (s *execution) exec(ctx context.Context, args []string) error {
 	}
 
 	if strings.ContainsRune(name, '/') {
-		return s.runPath(ctx, hc, name, rest)
+		return s.runPath(ctx, hc, name, vfs.FilePath(hc.Dir, name), rest)
 	}
 	if run, ok := s.engine.Registry().Lookup(name); ok {
 		return status(run(s.execContext(ctx, hc), rest))
@@ -117,9 +127,20 @@ func (s *execution) exec(ctx context.Context, args []string) error {
 	case "history":
 		return s.printHistory(hc, rest)
 	default:
+		if filename := s.lookPath(hc, name, true); filename != "" {
+			return s.runPath(ctx, hc, name, filename, rest)
+		}
 		fmt.Fprintf(hc.Stderr, "bash: %s: command not found\n", name)
 		return status(127)
 	}
+}
+
+func (s *execution) lookPath(hc interp.HandlerContext, name string, executable bool) string {
+	searchPath := hc.Env.Get("PATH")
+	if !searchPath.IsSet() {
+		return ""
+	}
+	return vfs.LookPath(s.vfs, hc.Dir, searchPath.String(), name, executable)
 }
 
 func (s *execution) alias(ctx context.Context, hc interp.HandlerContext, args []string) error {
@@ -177,7 +198,6 @@ parsed:
 	if len(args) > 1 {
 		return diagnostic(hc.Stderr, "cd", 1, "too many arguments")
 	}
-	curDir := s.currentDir(hc)
 	var target string
 	printNew := false
 	switch {
@@ -201,7 +221,13 @@ parsed:
 		target = args[0]
 	}
 
-	resolved := s.resolve(curDir, target)
+	if target == "" {
+		return diagnostic(hc.Stderr, "cd", 1, "%s", fileError(contract.ErrNotExist))
+	}
+	resolved := vfs.FilePath(hc.Dir, target)
+	if !physical {
+		resolved = path.Clean(resolved)
+	}
 	info, err := s.vfs.Stat(resolved)
 	if err != nil {
 		return diagnostic(hc.Stderr, "cd", 1, "%s: %s", target, fileError(err))
@@ -217,14 +243,8 @@ parsed:
 		resolved = info.Path
 	}
 
-	if runtime.GOOS != "windows" {
-		if err := hc.Builtin(ctx, []string{"cd", resolved}); err != nil {
-			return err
-		}
-	} else {
-		if err := hc.Builtin(ctx, []string{"export", "OLDPWD=" + curDir, "PWD=" + resolved}); err != nil {
-			return err
-		}
+	if err := hc.Builtin(ctx, []string{"cd", resolved}); err != nil {
+		return err
 	}
 	if printNew {
 		fmt.Fprintln(hc.Stdout, resolved)
@@ -232,7 +252,7 @@ parsed:
 	return nil
 }
 
-func (s *execution) pwd(ctx context.Context, hc interp.HandlerContext, args []string) error {
+func (s *execution) pwd(_ context.Context, hc interp.HandlerContext, args []string) error {
 	physical := false
 	for _, arg := range args {
 		switch arg {
@@ -244,7 +264,7 @@ func (s *execution) pwd(ctx context.Context, hc interp.HandlerContext, args []st
 			return diagnostic(hc.Stderr, "pwd", 2, "invalid option: %q", arg)
 		}
 	}
-	curDir := s.currentDir(hc)
+	curDir := hc.Dir
 	if !physical {
 		fmt.Fprintln(hc.Stdout, curDir)
 		return nil
@@ -258,13 +278,20 @@ func (s *execution) pwd(ctx context.Context, hc interp.HandlerContext, args []st
 }
 
 func (s *execution) indirect(ctx context.Context, hc interp.HandlerContext, name string, args []string) error {
-	if name == "command" && len(args) > 0 {
+	for name == "command" && len(args) > 0 {
 		switch args[0] {
 		case "-v", "-V":
 			return s.describe(hc, name, args)
-		case "--", "-p":
+		case "-p":
+			args = args[1:]
+			continue
+		case "--":
 			args = args[1:]
 		}
+		break
+	}
+	if name == "builtin" && len(args) > 0 && args[0] == "--" {
+		args = args[1:]
 	}
 	if len(args) == 0 {
 		return nil
@@ -273,11 +300,14 @@ func (s *execution) indirect(ctx context.Context, hc interp.HandlerContext, name
 	if name == "builtin" && !interp.IsBuiltin(target) {
 		return status(1)
 	}
-	if virtualBuiltin(target) {
+	if s.virtualBuiltin(target) {
 		return s.exec(ctx, args)
 	}
-	if interp.IsBuiltin(target) {
+	if interp.IsImplementedBuiltin(target) {
 		return hc.Builtin(ctx, args)
+	}
+	if interp.IsBuiltin(target) {
+		return diagnostic(hc.Stderr, target, 2, "unsupported builtin")
 	}
 	return s.exec(ctx, args)
 }
@@ -291,15 +321,19 @@ func (s *execution) describe(hc interp.HandlerContext, name string, args []strin
 	for _, arg := range args {
 		kind, description := "", arg
 		if strings.ContainsRune(arg, '/') {
-			if info, err := s.vfs.Stat(s.resolve(hc.Dir, arg)); err == nil && info.IsExecutable() {
+			if info, err := s.vfs.Stat(vfs.FilePath(hc.Dir, arg)); err == nil && info.IsExecutable() {
 				kind = "file"
 			}
 		} else if syntax.IsKeyword(arg) {
 			kind = "keyword"
-		} else if interp.IsBuiltin(arg) {
+		} else if hc.HasFunction(arg) {
+			kind = "function"
+		} else if interp.IsImplementedBuiltin(arg) || s.virtualBuiltin(arg) {
 			kind = "builtin"
 		} else if _, ok := s.engine.Registry().Lookup(arg); ok || arg == "env" || arg == "sh" || arg == "bash" {
 			kind = "builtin"
+		} else if filename := s.lookPath(hc, arg, true); filename != "" {
+			kind, description = "file", filename
 		}
 		if kind == "" || (mode == "-P" || mode == "-p") && kind != "file" {
 			code = 1
@@ -312,38 +346,15 @@ func (s *execution) describe(hc interp.HandlerContext, name string, args []strin
 		case "-t":
 			description = kind
 		case "", "-V":
-			description = fmt.Sprintf("%s is a shell %s", arg, kind)
 			if kind == "file" {
-				description = arg + " is " + arg
+				description = arg + " is " + description
+			} else {
+				description = fmt.Sprintf("%s is a shell %s", arg, kind)
 			}
 		}
 		fmt.Fprintln(hc.Stdout, description)
 	}
 	return status(code)
-}
-
-func (s *execution) test(ctx context.Context, hc interp.HandlerContext, args []string) error {
-	name := args[0]
-	operands := args[1:]
-	if name == "[" && len(operands) > 0 && operands[len(operands)-1] == "]" {
-		operands = operands[:len(operands)-1]
-	}
-	if len(operands) == 2 && (operands[0] == "-O" || operands[0] == "-G") {
-		info, err := s.vfs.Stat(s.resolve(hc.Dir, operands[1]))
-		if err != nil {
-			return status(1)
-		}
-		if operands[0] == "-O" && info.Owner == s.engine.cfg.User ||
-			operands[0] == "-G" && info.Group == s.engine.cfg.User {
-			return nil
-		}
-		return status(1)
-	}
-	// The native ownership operators expect a host syscall.Stat_t.
-	if len(operands) > 2 && (slices.Contains(operands, "-O") || slices.Contains(operands, "-G")) {
-		return diagnostic(hc.Stderr, name, 2, "use a separate test for virtual file ownership checks")
-	}
-	return hc.Builtin(ctx, args)
 }
 
 func (s *execution) printHistory(hc interp.HandlerContext, args []string) error {
@@ -373,7 +384,7 @@ func (s *execution) execContext(ctx context.Context, hc interp.HandlerContext) *
 	if cfg.Term != nil {
 		width, height = cfg.Term.Size()
 	}
-	curDir := s.currentDir(hc)
+	curDir := hc.Dir
 	ec := &contract.ExecContext{
 		Ctx: ctx, VFS: s.vfs, Stdin: hc.Stdin, Stdout: hc.Stdout, Stderr: hc.Stderr,
 		CWD: curDir, Home: cfg.Home, User: cfg.User, Host: cfg.Host, Env: envStrings(hc.Env, true),
@@ -383,7 +394,7 @@ func (s *execution) execContext(ctx context.Context, hc interp.HandlerContext) *
 		OnDestructive: cfg.OnDestructive, OnTutorialAction: cfg.OnTutorialAction,
 	}
 	ec.SetCWD = func(dir string) {
-		resolved := s.resolve(ec.CWD, dir)
+		resolved := s.vfs.ResolvePath(ec.CWD, cfg.Home, dir)
 		if s.cd(ctx, hc, []string{resolved}) == nil {
 			ec.Env["OLDPWD"], ec.Env["PWD"], ec.CWD = ec.CWD, resolved, resolved
 		}
@@ -431,11 +442,10 @@ func (s *execution) shellCommand(ctx context.Context, hc interp.HandlerContext, 
 			return s.shellCommand(ctx, hc, name, nil)
 		}
 	}
-	return s.readScript(ctx, hc, args[0], s.resolve(s.currentDir(hc), args[0]), args[1:])
+	return s.readScript(ctx, hc, args[0], vfs.FilePath(hc.Dir, args[0]), args[1:])
 }
 
-func (s *execution) runPath(ctx context.Context, hc interp.HandlerContext, name string, args []string) error {
-	path := s.resolve(s.currentDir(hc), name)
+func (s *execution) runPath(ctx context.Context, hc interp.HandlerContext, name, path string, args []string) error {
 	info, err := s.vfs.Stat(path)
 	switch {
 	case err != nil:
@@ -471,7 +481,7 @@ func (s *execution) readScript(ctx context.Context, hc interp.HandlerContext, na
 func (s *execution) runChild(ctx context.Context, hc interp.HandlerContext, name, code string, params []string) error {
 	env := make(shellEnv)
 	maps.Insert(env, hc.Env.Each)
-	return s.child(ctx, name, code, s.currentDir(hc), env, params, hc.Stdin, hc.Stdout, hc.Stderr)
+	return s.child(ctx, name, code, hc.Dir, env, params, hc.Stdin, hc.Stdout, hc.Stderr)
 }
 
 func (s *execution) child(ctx context.Context, name, code, cwd string, env shellEnv, params []string, stdin io.Reader, stdout, stderr io.Writer) error {

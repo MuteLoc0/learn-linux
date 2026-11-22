@@ -4,6 +4,7 @@ package term
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
 	"os"
 	"os/exec"
@@ -24,7 +25,7 @@ type standardTerminal struct {
 	console   bool
 	mintty    bool
 	minttyRaw bool
-	sttySane  bool
+	sttyMode  string
 	state     *term.State
 	outMode   uint32
 	outSaved  bool
@@ -38,12 +39,8 @@ func NewStdTerminal() (contract.Terminal, error) {
 	in, out := windows.Handle(os.Stdin.Fd()), windows.Handle(os.Stdout.Fd())
 	var inputMode, outputMode uint32
 	consoleInput := windows.GetConsoleMode(in, &inputMode) == nil
-	console := consoleInput && term.IsTerminal(int(in)) && windows.GetConsoleMode(out, &outputMode) == nil
-
-	fileType, _ := windows.GetFileType(in)
-	mintty := !consoleInput && (os.Getenv("MSYSTEM") != "" ||
-		os.Getenv("TERM_PROGRAM") == "mintty" ||
-		(fileType == windows.FILE_TYPE_PIPE && os.Getenv("TERM") != ""))
+	console := consoleInput && windows.GetConsoleMode(out, &outputMode) == nil
+	mintty := !consoleInput && isMinttyPipe(in) && isMinttyPipe(out)
 	t := &standardTerminal{terminalIO: stdStreams(console || mintty), console: console, mintty: mintty}
 	if console {
 		if err := t.enableVTOutput(false); err != nil {
@@ -53,6 +50,28 @@ func NewStdTerminal() (contract.Terminal, error) {
 		t.output = consoleOutput{terminal: t}
 	}
 	return t, nil
+}
+
+func isMinttyPipe(handle windows.Handle) bool {
+	kind, err := windows.GetFileType(handle)
+	if err != nil || kind != windows.FILE_TYPE_PIPE {
+		return false
+	}
+	// FILE_NAME_INFO contains a byte count followed by a UTF-16 name.
+	var info [4 + 512]byte
+	if err := windows.GetFileInformationByHandleEx(handle, windows.FileNameInfo, &info[0], uint32(len(info))); err != nil {
+		return false
+	}
+	length := binary.LittleEndian.Uint32(info[:4])
+	if length > uint32(len(info)-4) || length%2 != 0 {
+		return false
+	}
+	name := make([]uint16, length/2)
+	_, _ = binary.Decode(info[4:4+length], binary.LittleEndian, name)
+	pipe := strings.TrimPrefix(windows.UTF16ToString(name), `\Device\NamedPipe`)
+	return (strings.HasPrefix(pipe, `\msys-`) || strings.HasPrefix(pipe, `\cygwin-`)) &&
+		strings.Contains(pipe, "-pty") &&
+		(strings.Contains(pipe, "-from-master") || strings.Contains(pipe, "-to-master"))
 }
 
 type consoleOutput struct {
@@ -122,10 +141,13 @@ func (t *standardTerminal) EnableRawMode() error {
 		t.state = state
 	}
 	if t.mintty {
-		t.sttySane = true
-		if _, err := runStty("raw", "-echo"); err != nil {
-			_ = t.disableRawModeLocked()
+		state, err := runStty("-g")
+		if err != nil {
 			return nil
+		}
+		t.sttyMode = strings.TrimSpace(state)
+		if _, err := runStty("raw", "-echo"); err != nil {
+			return t.disableRawModeLocked()
 		}
 		t.minttyRaw = true
 	}
@@ -153,11 +175,10 @@ func (t *standardTerminal) disableRawModeLocked() error {
 			t.outRaw = false
 		}
 	}
-	if t.sttySane {
-		_, sttyErr = runStty("sane")
-		if sttyErr == nil || !t.minttyRaw {
-			t.sttySane = false
-			sttyErr = nil
+	if t.sttyMode != "" {
+		_, sttyErr = runStty(t.sttyMode)
+		if sttyErr == nil {
+			t.sttyMode = ""
 			t.minttyRaw = false
 		}
 	}

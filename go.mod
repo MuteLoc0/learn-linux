@@ -7,3 +7,5 @@ require (
 	golang.org/x/term v0.48.0
 	mvdan.cc/sh/v3 v3.14.1
 )
+
+replace mvdan.cc/sh/v3 => ./third_party/mvdan-sh

@@ -233,6 +233,7 @@ func TestHistoryGoalVariants(t *testing.T) {
 		{"ls operand", 1, 2, contract.CommandRecord{Raw: "ls -- -a"}, false},
 		{"ls almost all", 1, 2, contract.CommandRecord{Raw: "ls -A"}, false},
 		{"echoed tree", 1, 3, contract.CommandRecord{Raw: "echo tree"}, false},
+		{"history process substitution", 1, 2, contract.CommandRecord{Raw: "ls <(echo -a)"}, false},
 		{"head from stdin", 3, 1, contract.CommandRecord{Raw: "cat logs/server.log | head"}, true},
 		{"head on log", 3, 1, contract.CommandRecord{Command: "head", Args: []string{"logs/server.log"}}, true},
 		{"less on wrong file", 3, 3, contract.CommandRecord{Raw: "less app.conf"}, false},

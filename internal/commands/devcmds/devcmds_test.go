@@ -393,14 +393,14 @@ loop: cycle
 func TestSystemAndTutorialCommands(t *testing.T) {
 	f := newFixture(t)
 	f.ec.History = []string{"pwd", "ls", "history"}
-	f.ec.Env = map[string]string{"Z": "two", "A": "one"}
+	f.ec.Env = map[string]string{"Z": "two", "A": "one", "PATH": "/usr/bin:/bin"}
 	f.write("/bin/custom", "", 0755)
 	for _, test := range []struct {
 		args []string
 		want string
 		code int
 	}{
-		{[]string{"which", "gcc", "custom", "cd", "missing"}, "/usr/bin/gcc\n/usr/bin/custom\ncd: shell built-in command\n", 1},
+		{[]string{"which", "gcc", "custom", "cd", "missing"}, "/usr/bin/gcc\n/bin/custom\ncd: shell built-in command\n", 1},
 		{[]string{"whoami"}, "learner\n", 0},
 		{[]string{"hostname"}, "linux-virtual\n", 0},
 		{[]string{"uname"}, "Linux\n", 0},
@@ -409,7 +409,7 @@ func TestSystemAndTutorialCommands(t *testing.T) {
 		{[]string{"id"}, "uid=1000(learner) gid=1000(learner) groups=1000(learner),27(sudo)\n", 0},
 		{[]string{"history"}, "  1  pwd\n  2  ls\n  3  history\n", 0},
 		{[]string{"history", "2"}, "  2  ls\n  3  history\n", 0},
-		{[]string{"env"}, "A=one\nZ=two\n", 0},
+		{[]string{"env"}, "A=one\nPATH=/usr/bin:/bin\nZ=two\n", 0},
 		{[]string{"clear"}, "\x1b[2J\x1b[H", 0},
 		{[]string{"true"}, "", 0},
 		{[]string{"false"}, "", 1},

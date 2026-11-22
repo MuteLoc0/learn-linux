@@ -118,9 +118,6 @@ func TestShellSyntaxAndIO(t *testing.T) {
 
 func TestCDInVFS(t *testing.T) {
 	e, fs := newTestEngine(t, Config{})
-	if _, err := os.Stat(home + "/build"); !os.IsNotExist(err) {
-		t.Fatalf("test requires %s/build to exist only in VFS, host stat: %v", home, err)
-	}
 	must(t, fs.Mkdir(home+"/build", 0755))
 	must(t, fs.MkdirAll(home+"/workspace/a/b", 0755))
 	run(t, e, "cd /home/learner/build && pwd", 0, home+"/build\n", "")
@@ -138,6 +135,65 @@ func TestCDInVFS(t *testing.T) {
 	run(t, e, "cd ~/build-link; pwd; builtin pwd -P", 0, home+"/build-link\n"+home+"/build\n", "")
 	e.SetCWD(home)
 	run(t, e, "cd -; pwd", 0, home+"/build-link\n"+home+"/build-link\n", "")
+}
+
+func TestPOSIXPathsAfterCD(t *testing.T) {
+	e, fs := newTestEngine(t, Config{})
+	events := home + "/events"
+	must(t, fs.MkdirAll(events+"/sub", 0755))
+	must(t, fs.Mkdir(events+"/[notes]", 0755))
+	must(t, fs.WriteFile(events+"/notes_a.txt", []byte("one\n"), 0644))
+	must(t, fs.WriteFile(events+"/notes_b.txt", []byte("two\n"), 0644))
+	must(t, fs.WriteFile(events+"/[notes]/read.txt", nil, 0644))
+	must(t, fs.WriteFile(events+"/C:\\notes.txt", []byte("virtual\n"), 0644))
+	must(t, fs.Symlink(".", events+"/loop"))
+	must(t, fs.Symlink(events+"/sub", home+"/sub-link"))
+	must(t, fs.Symlink(events+"/notes_a.txt", events+"/first.txt"))
+
+	run(t, e, "cd && cd events && cat notes_*.txt > combined; cat combined", 0, "one\ntwo\n", "")
+	run(t, e, "printf '%s\\n' ../events/notes_*.txt /home/learner/events/notes_*.txt '[notes]'/*.txt",
+		0, "../events/notes_a.txt\n../events/notes_b.txt\n"+events+"/notes_a.txt\n"+events+"/notes_b.txt\n[notes]/read.txt\n", "")
+	run(t, e, "cat C:*.txt; test -f 'C:\\notes.txt' && [[ -f 'C:\\notes.txt' ]]", 0, "virtual\n", "")
+	run(t, e, "printf '%s\\n' nonexistent/*; shopt -s nullglob; printf '<%s>\\n' nonexistent/*", 0,
+		"nonexistent/*\n<>\n", "")
+	run(t, e, "shopt -s globstar; printf '%s\\n' **/read.txt", 0, "[notes]/read.txt\n", "")
+	run(t, e, "[ -f combined ] && [[ -e /home/learner/events/combined && -L first.txt ]] && test -O notes_a.txt -a -G notes_a.txt",
+		0, "", "")
+	run(t, e, "[[ first.txt -ef notes_a.txt && ! first.txt -ef notes_b.txt ]] && [ ! -e '' ]", 0, "", "")
+	run(t, e, "(cd /tmp && pwd && echo child > check); pwd; test ! -e check", 0, "/tmp\n"+events+"\n", "")
+	run(t, e, "PWD=/tmp; printf '%s\\n' notes_*.txt; echo actual > check", 0, "notes_a.txt\nnotes_b.txt\n", "")
+	run(t, e, "pwd; echo \"$PWD\"; cat check; cat /tmp/check", 0, events+"\n/tmp\nactual\nchild\n", "")
+	run(t, e, "cd -P ../sub-link/.. && pwd && echo \"$OLDPWD\"", 0, events+"\n"+events+"\n", "")
+	run(t, e, "cd -L ../sub-link/.. && pwd && cd -", 0, home+"\n"+events+"\n", "")
+	run(t, e, "test -f ../sub-link/../combined && cat < ../sub-link/../combined", 0, "one\ntwo\n", "")
+	run(t, e, "PATH=lower path=upper; export PATH path; printf '%s|%s\\n' \"$PATH\" \"$path\"", 0, "lower|upper\n", "")
+	run(t, e, "(printf '%s|%s\\n' \"$PATH\" \"$path\")", 0, "lower|upper\n", "")
+}
+
+func TestVirtualDirectoryStack(t *testing.T) {
+	e, _ := newTestEngine(t, Config{})
+	run(t, e, "pushd /tmp", 0, "/tmp "+home+"\n", "")
+	run(t, e, "cd /; dirs", 0, "/ "+home+"\n", "")
+	run(t, e, "(popd && pwd); pwd", 0, home+"\n"+home+"\n/\n", "")
+	run(t, e, "popd; printf '%s|%s\\n' \"$PWD\" \"$OLDPWD\"", 0, home+"\n"+home+"|/\n", "")
+	run(t, e, "pushd -n /missing", 0, home+" /missing\n", "")
+	run(t, e, "popd", 1, "", "popd: no such file or directory: \"/missing\"\n")
+	run(t, e, "dirs; popd -n", 0, home+" /missing\n"+home+"\n", "")
+}
+
+func TestSourceAndExecutablePATH(t *testing.T) {
+	e, fs := newTestEngine(t, Config{})
+	must(t, fs.WriteFile("/bin/task", []byte("printf 'task:%s:%s\\n' \"$PWD\" \"$1\"\n"), 0755))
+	must(t, fs.WriteFile("/bin/settings", []byte("export LOADED=$1\ncd /tmp\nreturn 3\necho unreachable\n"), 0644))
+	must(t, fs.WriteFile(home+"/local-task", []byte("printf 'local:%s\\n' \"$1\"\n"), 0755))
+	run(t, e, "cd /tmp && task argument && command -v task && type -t task", 0, "task:/tmp:argument\n/bin/task\nfile\n", "")
+	run(t, e, "cd; set -- original; source settings 'one two'; printf '%s:%s:%s:%s\\n' \"$?\" \"$LOADED\" \"$1\" \"$PWD\"",
+		0, "3:one two:original:/tmp\n", "")
+	run(t, e, "cd; PATH=:/bin; command -v local-task; local-task data; exec task last; echo unreachable",
+		0, home+"/local-task\nlocal:data\ntask:"+home+":last\n", "")
+	run(t, e, "builtin export KEY='~literal $(echo untouched)'; command export SECOND=value; printf '%s|%s\\n' \"$KEY\" \"$SECOND\"",
+		0, "~literal $(echo untouched)|value\n", "")
+	run(t, e, "command -v umask", 1, "", "")
 }
 
 func TestSetVFSFromRegisteredAction(t *testing.T) {
@@ -293,11 +349,13 @@ func TestSyntaxErrorAndHostIsolation(t *testing.T) {
 	must(t, fs.WriteFile(home+"/source.sh", []byte("export FROM_SOURCE=virtual\n"), 0644))
 	run(t, e, "source source.sh; echo \"$FROM_SOURCE\"", 0, "virtual\n", "")
 
-	run(t, e, fmt.Sprintf("command -v %q", hostFile), 1, "", "")
-	run(t, e, fmt.Sprintf("test -e %q", hostFile), 1, "", "")
-	run(t, e, fmt.Sprintf("%q", hostFile), 127, "", "bash: "+hostFile+": No such file or directory\n")
-	run(t, e, fmt.Sprintf("TMPDIR=%q; echo leak > %q 2>/dev/null || true", hostDir, hostFile), 0, "",
-		"open "+hostFile+": no such file or directory\n")
+	virtualName := filepath.ToSlash(hostFile)
+	run(t, e, fmt.Sprintf("command -v %q", virtualName), 1, "", "")
+	run(t, e, fmt.Sprintf("test -e %q", virtualName), 1, "", "")
+	run(t, e, fmt.Sprintf("%q", virtualName), 127, "", "bash: "+virtualName+": No such file or directory\n")
+	run(t, e, fmt.Sprintf("TMPDIR=%q; echo leak > %q 2>/dev/null || true", filepath.ToSlash(hostDir), virtualName), 0, "",
+		"open "+virtualName+": no such file or directory\n")
+	run(t, e, fmt.Sprintf("exec %q", virtualName), 127, "", "bash: "+virtualName+": No such file or directory\n")
 	data, err := os.ReadFile(hostFile)
 	must(t, err)
 	if string(data) != "host only" {

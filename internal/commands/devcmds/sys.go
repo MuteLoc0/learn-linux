@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"learn-linux/internal/contract"
+	"learn-linux/internal/vfs"
 	"mvdan.cc/sh/v3/interp"
 )
 
@@ -24,11 +25,15 @@ func which(reg contract.CommandRegistry) contract.CommandHandler {
 				fmt.Fprintln(ec.Stdout, "/bin/"+name)
 			case registered:
 				fmt.Fprintln(ec.Stdout, "/usr/bin/"+name)
-			case interp.IsBuiltin(name):
+			case interp.IsImplementedBuiltin(name):
 				fmt.Fprintf(ec.Stdout, "%s: shell built-in command\n", name)
-			case !strings.Contains(name, "/") && (ec.VFS.Exists("/bin/"+name) || ec.VFS.Exists("/usr/bin/"+name)):
-				fmt.Fprintln(ec.Stdout, "/usr/bin/"+name)
 			default:
+				if searchPath, ok := ec.Env["PATH"]; ok {
+					if filename := vfs.LookPath(ec.VFS, ec.CWD, searchPath, name, true); filename != "" {
+						fmt.Fprintln(ec.Stdout, filename)
+						continue
+					}
+				}
 				status = 1
 			}
 		}

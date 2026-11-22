@@ -35,6 +35,7 @@ type execution struct {
 func (e *Engine) executeFile(ctx context.Context, file *syntax.File, record *contract.CommandRecord, out, errOut *terminalOutput) error {
 	e.mu.Lock()
 	cwd, revision, lastStatus := e.cwd, e.dirRevision, e.lastStatus
+	dirStack := slices.Clone(e.dirStack)
 	vars, aliases := maps.Clone(e.vars), maps.Clone(e.aliases)
 	e.envOverrides = make(shellEnv)
 	run := &execution{engine: e, vfs: e.vfs, tty: out, history: slices.Clone(e.history)}
@@ -46,6 +47,7 @@ func (e *Engine) executeFile(ctx context.Context, file *syntax.File, record *con
 		record.ExitCode = 1
 		return err
 	}
+	runner.RestoreDirectoryStack(dirStack)
 	for _, name := range slices.Sorted(maps.Keys(aliases)) {
 		if err := runner.Run(ctx, literalCall("alias", name+"="+aliases[name])); err != nil {
 			record.ExitCode = 1
@@ -76,11 +78,8 @@ func (e *Engine) executeFile(ctx context.Context, file *syntax.File, record *con
 	}
 	maps.Copy(e.vars, e.envOverrides)
 	if e.dirRevision == revision {
-		if pwd := normalizePOSIXPath(runner.Vars["PWD"].String()); strings.HasPrefix(pwd, "/") {
-			e.cwd = pwd
-		} else {
-			e.cwd = normalizePOSIXPath(runner.Dir)
-		}
+		e.cwd = runner.Dir
+		e.dirStack = runner.DirectoryStack()
 	} else {
 		e.vars["PWD"] = scalar(e.cwd, true)
 	}
@@ -104,23 +103,10 @@ func (e *Engine) executeFile(ctx context.Context, file *syntax.File, record *con
 }
 
 func (s *execution) newRunner(cwd string, env shellEnv, params []string, stdin io.Reader, stdout, stderr io.Writer, interactive bool) (*interp.Runner, error) {
-	// interp.Dir would stat this path on the host. Set the virtual working
-	// directory before New has a chance to apply its host defaults.
-	initial := maps.Clone(env)
-	tmp, hadTmp := initial["TMPDIR"]
-	initial["TMPDIR"] = scalar(interpreterTempDir(), false)
-	for _, key := range []string{"HOME", "UID", "EUID", "GID"} {
-		if !initial[key].IsSet() {
-			initial[key] = scalar("", false)
-		}
-	}
 	runner, err := interp.New(
-		func(r *interp.Runner) error {
-			r.Dir = cwd
-			r.Params = slices.Clone(params)
-			return nil
-		},
-		interp.Env(initial),
+		interp.VirtualDir(cwd),
+		interp.Params(append([]string{"--"}, params...)...),
+		interp.Env(env),
 		interp.StdIO(stdin, stdout, stderr),
 		interp.Interactive(interactive),
 		interp.OpenHandler(s.open),
@@ -134,37 +120,31 @@ func (s *execution) newRunner(cwd string, env shellEnv, params []string, stdin i
 		return nil, err
 	}
 	runner.Reset()
-	if hadTmp {
-		initial["TMPDIR"] = tmp
-	} else {
-		delete(initial, "TMPDIR")
-	}
-	for _, key := range []string{"HOME", "UID", "EUID", "GID"} {
-		if !env[key].IsSet() {
-			delete(initial, key)
-		}
-	}
 	return runner, nil
 }
 
 func (s *execution) call(ctx context.Context, args []string) ([]string, error) {
-	if s.primary != nil && interp.HandlerCtx(ctx).Pos == s.primary.Args[0].Pos() {
+	hc := interp.HandlerCtx(ctx)
+	if s.primary != nil && hc.Pos == s.primary.Args[0].Pos() {
 		s.mu.Lock()
 		if s.primaryArg == nil {
 			s.primaryArg = slices.Clone(args)
 		}
 		s.mu.Unlock()
 	}
-	if virtualBuiltin(args[0]) {
+	if s.virtualBuiltin(args[0]) && !hc.HasFunction(args[0]) {
 		return append([]string{dispatchCommand}, args...), nil
 	}
 	return args, nil
 }
 
-func virtualBuiltin(name string) bool {
+func (s *execution) virtualBuiltin(name string) bool {
 	switch name {
-	case "cd", "alias", "unalias", "history", "exit", "pwd", "type", "command", "builtin", "source", ".", "eval", "trap", "test", "[", "unset":
+	case "cd", "alias", "unalias", "history", "exit", "pwd", "type", "command", "builtin", "source", ".", "eval", "trap", "unset":
 		return true
+	case "help":
+		_, registered := s.engine.Registry().Lookup(name)
+		return registered
 	default:
 		return false
 	}
@@ -210,6 +190,7 @@ func firstCommand(file *syntax.File, env shellEnv) (string, []string, *syntax.Ca
 	var args []string
 	var call *syntax.CallExpr
 	var found bool
+	cfg := &expand.Config{Env: env, VirtualFS: true}
 	syntax.Walk(file, func(node syntax.Node) bool {
 		if found {
 			return false
@@ -218,9 +199,9 @@ func firstCommand(file *syntax.File, env shellEnv) (string, []string, *syntax.Ca
 		case *syntax.CallExpr:
 			if len(node.Args) > 0 {
 				call = node
-				cmd, _ = expand.Literal(&expand.Config{Env: env}, node.Args[0])
+				cmd, _ = expand.Literal(cfg, node.Args[0])
 				for _, word := range node.Args[1:] {
-					arg, _ := expand.Literal(&expand.Config{Env: env}, word)
+					arg, _ := expand.Literal(cfg, word)
 					args = append(args, arg)
 				}
 			}
@@ -229,10 +210,10 @@ func firstCommand(file *syntax.File, env shellEnv) (string, []string, *syntax.Ca
 			cmd = node.Variant.Value
 			for _, arg := range node.Args {
 				if arg.Name == nil {
-					value, _ := expand.Literal(&expand.Config{Env: env}, arg.Value)
+					value, _ := expand.Literal(cfg, arg.Value)
 					args = append(args, value)
 				} else if arg.Value != nil {
-					value, _ := expand.Literal(&expand.Config{Env: env}, arg.Value)
+					value, _ := expand.Literal(cfg, arg.Value)
 					args = append(args, arg.Name.Value+"="+value)
 				} else {
 					args = append(args, arg.Name.Value)
