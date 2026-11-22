@@ -1,0 +1,15 @@
+# Binaries and build outputs
+/dist/
+/bin/
+learn-linux
+learn-linux.exe
+*.test
+*.out
+coverage.txt
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
