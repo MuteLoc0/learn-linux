@@ -66,7 +66,7 @@ type EditorState struct {
 // UIRenderer centralizes all terminal typography, ANSI styling, formatting, and animations.
 // Owned exclusively by Gemini 4 Hydrogen so visual quality stays cohesive across the app.
 type UIRenderer interface {
-	RenderMOTD(i18n I18N, ch ChapterMeta, completedCount, totalChapters int, termWidth int) string
+	RenderMOTD(i18n I18N, ch ChapterMeta, completedCount, totalChapters int, tipKey string, termWidth int) string
 	RenderPrompt(state PromptState) string
 	RenderMission(i18n I18N, state ChapterState, termWidth int) string
 	RenderHint(i18n I18N, chapterID int, hintIdx, totalHints int, hintText string, termWidth int) string

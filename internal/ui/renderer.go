@@ -25,15 +25,13 @@ func NewRenderer() *Renderer {
 var _ contract.UIRenderer = (*Renderer)(nil)
 
 // RenderMOTD renders the virtual Linux login banner, progress bar, active chapter, and quick strip.
-func (r *Renderer) RenderMOTD(i18n contract.I18N, ch contract.ChapterMeta, completedCount, totalChapters int, termWidth int) string {
+func (r *Renderer) RenderMOTD(i18n contract.I18N, ch contract.ChapterMeta, completedCount, totalChapters int, tipKey string, termWidth int) string {
 	w := clampProseWidth(termWidth)
 	ruleW := minInt(w, 78)
 
 	var b strings.Builder
 	osName := trText(i18n, contract.KeyMOTDOSName)
-	b.WriteString(styled("▸ learn-linux", boldCyan))
-	b.WriteString(styled(" · ", ansiDim))
-	b.WriteString(styled(osName, ansiBold))
+	b.WriteString(styled(osName, boldCyan))
 	b.WriteByte('\n')
 	b.WriteString(hairline(ruleW))
 	b.WriteByte('\n')
@@ -73,30 +71,111 @@ func (r *Renderer) RenderMOTD(i18n contract.I18N, ch contract.ChapterMeta, compl
 	b.WriteByte('\n')
 
 	quickLabel := trText(i18n, contract.KeyMOTDQuickCmds)
-	if strings.Contains(quickLabel, "mission") {
-		for _, line := range wrapText(quickLabel, w) {
-			b.WriteString(styled(line, fgCyan))
-			b.WriteByte('\n')
-		}
-	} else {
-		quickCmds := []string{"mission", "hint", "chapter", "man", "lang", "sandbox", "exit"}
-		styledCmds := make([]string, len(quickCmds))
-		for i, c := range quickCmds {
-			styledCmds[i] = styled(c, fgCyan)
-		}
-		b.WriteString(fmt.Sprintf("%s %s\n", styled(quickLabel+":", ansiDim), strings.Join(styledCmds, styled(" · ", ansiDim))))
-	}
+	writeQuickCmds(&b, quickLabel, w)
 
-	tipTab := trText(i18n, contract.KeyMOTDTipTab)
-	tipLang := trText(i18n, contract.KeyMOTDTipLang)
-	tipLine := tipTab + " · " + tipLang
-	for _, line := range wrapText(tipLine, w) {
-		b.WriteString(styled(line, ansiDim))
-		b.WriteByte('\n')
-	}
+	writeTipLines(&b, i18n, tipKey, w)
 
 	b.WriteString(hairline(ruleW))
 	return b.String()
+}
+
+func writeQuickCmds(b *strings.Builder, quickLabel string, width int) {
+	if !strings.Contains(quickLabel, "mission") {
+		quickCmds := []string{"mission", "hint", "chapter", "man", "lang", "sandbox", "exit"}
+		styledCmds := make([]string, len(quickCmds))
+		for i, c := range quickCmds {
+			if c == "exit" {
+				styledCmds[i] = styled(c, fgRed)
+			} else {
+				styledCmds[i] = styled(c, fgCyan)
+			}
+		}
+		b.WriteString(fmt.Sprintf("%s %s\n", styled(quickLabel+":", ansiDim), strings.Join(styledCmds, styled(" · ", ansiDim))))
+		return
+	}
+
+	prefix := ""
+	rest := quickLabel
+	if idx := strings.Index(quickLabel, "："); idx >= 0 {
+		end := idx + len("：")
+		prefix = quickLabel[:end]
+		rest = strings.TrimSpace(quickLabel[end:])
+	} else if idx := strings.IndexByte(quickLabel, ':'); idx >= 0 {
+		prefix = quickLabel[:idx+1] + " "
+		rest = strings.TrimSpace(quickLabel[idx+1:])
+	}
+
+	rawItems := strings.Split(rest, "|")
+	items := make([]string, 0, len(rawItems))
+	for _, raw := range rawItems {
+		if item := strings.TrimSpace(raw); item != "" {
+			items = append(items, item)
+		}
+	}
+
+	sepPlain := " | "
+	sepW := displayWidth(sepPlain)
+	sepStyled := styled(sepPlain, ansiDim)
+
+	curW := 0
+	if prefix != "" {
+		b.WriteString(styled(prefix, ansiDim))
+		curW = displayWidth(prefix)
+	}
+	lineHasItem := false
+	for _, item := range items {
+		itemW := displayWidth(item)
+		needW := itemW
+		if lineHasItem {
+			needW += sepW
+		}
+		if lineHasItem && curW+needW > width {
+			b.WriteByte('\n')
+			curW = 0
+			lineHasItem = false
+		}
+		if lineHasItem {
+			b.WriteString(sepStyled)
+			curW += sepW
+		}
+		b.WriteString(styleQuickCmdItem(item))
+		curW += itemW
+		lineHasItem = true
+	}
+	b.WriteByte('\n')
+}
+
+func styleQuickCmdItem(item string) string {
+	if item == "exit" || strings.HasPrefix(item, "exit ") || strings.HasPrefix(item, "exit(") {
+		return styled(item, fgRed)
+	}
+	return styled(item, fgCyan)
+}
+
+func resolveTipLine(i18n contract.I18N, tipKey string) string {
+	if tipKey == "" {
+		return ""
+	}
+	tip := strings.TrimSpace(trText(i18n, tipKey))
+	if tip == "" {
+		return ""
+	}
+	prefix := trText(i18n, contract.KeyTipsPrefix)
+	if prefix == "" || prefix == contract.KeyTipsPrefix {
+		prefix = "tips: "
+	}
+	return prefix + tip
+}
+
+func writeTipLines(b *strings.Builder, i18n contract.I18N, tipKey string, width int) {
+	tipLine := resolveTipLine(i18n, tipKey)
+	if tipLine == "" {
+		return
+	}
+	for _, line := range wrapText(tipLine, width) {
+		b.WriteString(styled(line, ansiDim))
+		b.WriteByte('\n')
+	}
 }
 
 // RenderPrompt renders the classic Linux shell prompt (PS1) with adaptive ANSI hierarchy.
@@ -194,6 +273,14 @@ func (r *Renderer) RenderMission(i18n contract.I18N, state contract.ChapterState
 		b.WriteString(styled(cmdLabel+": ", ansiDim))
 		b.WriteString(strings.Join(pills, styled("  ", ansiDim)))
 		b.WriteByte('\n')
+	}
+
+	if tipLine := resolveTipLine(i18n, state.TipKey); tipLine != "" {
+		b.WriteByte('\n')
+		for _, line := range wrapText(tipLine, w) {
+			b.WriteString(styled(line, ansiDim))
+			b.WriteByte('\n')
+		}
 	}
 
 	if len(state.Goals) > 0 {

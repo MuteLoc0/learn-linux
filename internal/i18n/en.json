@@ -1,14 +1,56 @@
 {
-  "motd.os_name": "LearnLinux Virtual Terminal v1.0 (Interactive Linux CLI Lab)",
-  "motd.welcome": "Welcome to LearnLinux! Everything runs inside an in-memory virtual filesystem—zero risk to your real machine and instant reset anytime.",
+  "motd.os_name": "LearnLinux v1.0",
+  "motd.welcome": "Welcome to LearnLinux, a virtualized terminal that never touches host files.",
   "motd.progress": "Progress: %d / %d chapters completed",
-  "motd.quick_cmds": "Quick commands: mission (objectives) | hint (get a clue) | check (verify) | chapter (switch) | man <cmd> (manual) | help",
-  "motd.tip_tab": "Tip: Press Tab to autocomplete commands and paths, ↑ / ↓ for command history, and Ctrl+L to clear the screen.",
-  "motd.tip_lang": "Language: Type 'lang zh' to switch to Simplified Chinese, or 'lang en' for English.",
+  "motd.quick_cmds": "Quick commands: mission (objectives) | hint (clue) | check (verify) | chapter (switch) | man <cmd> (manual) | help | exit (quit)",
 
   "ui.exit.goodbye": "Progress saved automatically. See you next time—keep sharpening your Linux CLI skills!",
   "ui.term.fallback_notice": "Terminal raw mode is unavailable; running in basic line-input mode (Tab completion and interactive UI are limited).",
   "ui.cmd.not_found_tip": "Command '%s' not found. Type 'help' to see available commands, or 'man' to browse built-in manuals.",
+
+  "ui.tips.prefix": "tips: ",
+  "ui.tips.global.language": "Use lang en for English or lang zh for Chinese.",
+  "ui.tips.global.tab": "Press Tab to complete command names and paths.",
+  "ui.tips.global.history": "Press ↑ or ↓ to browse your command history.",
+  "ui.tips.global.clear": "Run clear or press Ctrl+L to clear the screen.",
+  "ui.tips.global.manual": "Use man <cmd> to see command options and examples. Try man grep.",
+  "ui.tips.global.hint": "In a lesson, run hint for step-by-step guidance.",
+  "ui.tips.global.reset": "Run reset to restore the current lesson or sandbox files.",
+  "ui.tips.global.cursor": "Use Ctrl+A and Ctrl+E to move to the start or end of the line.",
+
+  "ui.tips.ch1.cd_previous": "Use cd - to switch back to your previous directory.",
+  "ui.tips.ch1.tree_depth": "Use tree -L 2 to show up to two levels below the starting directory.",
+  "ui.tips.ch1.readable_size": "Use ls -lh to see file sizes in readable units like K and M.",
+
+  "ui.tips.ch2.touch_time": "On an existing file, touch updates its timestamp and keeps its contents.",
+  "ui.tips.ch2.verbose_transfer": "Add -v to cp or mv to see each source and destination.",
+  "ui.tips.ch2.relative_link": "A relative symlink target is resolved from the link's directory.",
+
+  "ui.tips.ch3.less_matches": "In less, n jumps to the next search match and N to the previous one.",
+  "ui.tips.ch3.preview_lines": "head and tail show 10 lines by default. Use -n to change the count.",
+  "ui.tips.ch3.nano_exit": "If you have unsaved edits in nano, Ctrl+X asks whether to save them.",
+
+  "ui.tips.ch4.find_files": "Add -type f to find to show only regular files.",
+  "ui.tips.ch4.grep_literal": "Use grep -F to match literal text. A dot matches a dot.",
+  "ui.tips.ch4.uniq_count": "uniq -c counts adjacent identical lines. Sort first to count all copies.",
+
+  "ui.tips.ch5.preview_pipe": "Preview a pipeline on screen before adding > to save its output.",
+  "ui.tips.ch5.redirect_in": "Try wc -l < file to count lines using a file as input.",
+  "ui.tips.ch5.redirect_out": "With >, write to a separate file to keep your input file intact.",
+  "ui.tips.ch5.chain_status": "&& runs the next command on success. || runs it on failure.",
+
+  "ui.tips.ch6.owner_execute": "chmod u+x adds execute permission for the file's owner.",
+  "ui.tips.ch6.env": "Use env to see the variables inherited by your scripts.",
+  "ui.tips.ch6.mode_digits": "For each chmod digit, add 4 for read, 2 for write, and 1 for execute.",
+
+  "ui.tips.ch7.tar_list": "Use tar -tzf archive.tar.gz to list files without extracting them.",
+  "ui.tips.ch7.make_dry_run": "make -n previews the build commands without running them.",
+  "ui.tips.ch7.gzip_keep": "gzip -k file creates file.gz and keeps the original.",
+
+  "ui.tips.ch8.log_line": "Preview log matches with grep -n to see their original line numbers.",
+  "ui.tips.ch8.verify_config": "After editing a config, use cat to verify what was saved.",
+  "ui.tips.ch8.tar_base": "With tar -C dir, give input paths relative to dir when archiving.",
+  "ui.tips.ch8.verify_build": "Run the built program and check its output before packaging it.",
 
   "ui.mission.header": "Chapter %d: %s",
   "ui.mission.commands": "Key Commands",

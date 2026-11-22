@@ -28,6 +28,7 @@ type ChapterState struct {
 	AllPassed         bool
 	SoftLocked        bool
 	SoftLockReasonKey string
+	TipKey            string
 }
 
 // CommandRecord logs a single executed command line and its outcome.

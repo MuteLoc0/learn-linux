@@ -158,6 +158,10 @@ func TestEndToEndAllChaptersAndFeatures(t *testing.T) {
 
 	out := mockTerm.Output.String()
 	for _, mustContain := range []string{
+		"LearnLinux v1.0",
+		"欢迎来到LearnLinux，一个虚拟化的终端界面，不会影响任何宿主机文件。",
+		"\x1b[31mexit (退出)\x1b[0m",
+		"tips: ",
 		"Kernel panic",
 		"Service v2.0 ready",
 		"Hello from Virtual Linux C App!",
@@ -168,6 +172,8 @@ func TestEndToEndAllChaptersAndFeatures(t *testing.T) {
 		}
 	}
 	for _, mustNotContain := range []string{
+		"▸ learn-linux",
+		"小技巧：",
 		"%!s(",
 		"%!d(",
 		"Chapter 0",

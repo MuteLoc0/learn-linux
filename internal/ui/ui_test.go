@@ -16,12 +16,13 @@ type stubI18N struct {
 
 func newStubI18N(lang contract.Lang) *stubI18N {
 	m := map[string]string{
-		contract.KeyMOTDOSName:           "LinuxLearn OS 6.8.0-virtual (x86_64)",
-		contract.KeyMOTDWelcome:          "Welcome to the interactive Linux CLI learning environment. Type commands below to explore.",
+		contract.KeyMOTDOSName:           "LearnLinux v1.0",
+		contract.KeyMOTDWelcome:          "Welcome to LearnLinux, a virtualized terminal that never touches host files.",
 		contract.KeyMOTDProgress:         "Progress: %d/%d",
 		contract.KeyMOTDQuickCmds:        "Quick commands",
-		contract.KeyMOTDTipTab:           "Tip: press Tab to autocomplete",
-		contract.KeyMOTDTipLang:          "Tip: run 'lang zh' to switch language",
+		contract.KeyTipsPrefix:           "tips: ",
+		contract.KeyTipTab:               "Press Tab to autocomplete commands and paths.",
+		contract.KeyTipCDPrevious:        "Use cd - to switch back to your previous directory.",
 		contract.KeyMissionHeader:        "Mission",
 		contract.KeyMissionCommands:      "Commands",
 		contract.KeyMissionGoals:         "Objectives",
@@ -183,20 +184,37 @@ func TestRenderMOTDAndPrompt(t *testing.T) {
 		IntroKey:    "ch1.intro",
 	}
 
-	motd := r.RenderMOTD(i18n, ch, 2, 8, 80)
+	motd := r.RenderMOTD(i18n, ch, 2, 8, contract.KeyTipTab, 80)
 	plain := stripANSI(motd)
-	for _, want := range []string{"LinuxLearn OS 6.8.0-virtual", "Progress: 2/8", "[ch1]", "Navigation & Listing", "mission", "sandbox"} {
+	for _, want := range []string{"LearnLinux v1.0", "Progress: 2/8", "[ch1]", "Navigation & Listing", "mission", "sandbox", "exit", "tips: Press Tab to autocomplete commands and paths."} {
 		if !strings.Contains(plain, want) {
 			t.Errorf("MOTD missing %q in:\n%s", want, plain)
 		}
+	}
+	if strings.Contains(plain, "▸ learn-linux") {
+		t.Errorf("MOTD should not contain legacy banner prefix:\n%s", plain)
+	}
+	if !strings.Contains(motd, styled("exit", fgRed)) {
+		t.Errorf("MOTD should highlight exit in red, got:\n%q", motd)
 	}
 	// Fits comfortably inside 80x24 terminal.
 	if lines := strings.Count(plain, "\n") + 1; lines > 20 {
 		t.Errorf("MOTD too tall for 80x24: %d lines", lines)
 	}
 
+	// Structured pipe-separated quick commands with red exit (退出)
+	zhI18N := newStubI18N(contract.LangZH)
+	zhI18N.strings[contract.KeyMOTDQuickCmds] = "快捷命令：mission (查看任务) | hint (获取提示) | check (检查进度) | chapter (切换章节) | man <命令> (查手册) | help (帮助) | exit (退出)"
+	motdZH := r.RenderMOTD(zhI18N, ch, 0, 8, contract.KeyTipTab, 80)
+	if !strings.Contains(motdZH, styled("exit (退出)", fgRed)) {
+		t.Errorf("MOTD should highlight 'exit (退出)' in red, got:\n%q", motdZH)
+	}
+	if !strings.Contains(motdZH, styled("tips: Press Tab to autocomplete commands and paths.", ansiDim)) {
+		t.Errorf("MOTD should style tips line in dim grey, got:\n%q", motdZH)
+	}
+
 	// Narrow 60-col check
-	motdNarrow := r.RenderMOTD(i18n, ch, 0, 8, 45)
+	motdNarrow := r.RenderMOTD(i18n, ch, 0, 8, contract.KeyTipTab, 45)
 	if motdNarrow == "" {
 		t.Fatal("narrow MOTD empty")
 	}
@@ -251,12 +269,20 @@ func TestRenderMissionHintChapterListAndCleared(t *testing.T) {
 			{ID: "g1", DescKey: "ch1.goal.1", Completed: true},
 			{ID: "g2", DescKey: "ch1.goal.2", Completed: false},
 		},
+		TipKey: contract.KeyTipCDPrevious,
 	}
-	mission := stripANSI(r.RenderMission(i18n, state, 60))
-	for _, want := range []string{"Navigation & Listing", "✓", "○", "DONE", "TODO", "pwd"} {
+	missionRaw := r.RenderMission(i18n, state, 80)
+	mission := stripANSI(missionRaw)
+	for _, want := range []string{"Navigation & Listing", "✓", "○", "DONE", "TODO", "pwd", "tips: Use cd - to switch back to your previous directory."} {
 		if !strings.Contains(mission, want) {
-			t.Errorf("RenderMission missing %q", want)
+			t.Errorf("RenderMission missing %q in:\n%s", want, mission)
 		}
+	}
+	if !strings.Contains(mission, "Commands: pwd  ls  cd\n\ntips: Use cd - to switch back to your previous directory.\n\nObjectives") {
+		t.Errorf("RenderMission should place tips one blank line below Commands and above Objectives:\n%s", mission)
+	}
+	if !strings.Contains(missionRaw, styled("tips: Use cd - to switch back to your previous directory.", ansiDim)) {
+		t.Errorf("RenderMission should style tips in dim grey matching Commands label:\n%q", missionRaw)
 	}
 
 	state.AllPassed = true

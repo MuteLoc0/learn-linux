@@ -20,6 +20,7 @@ import (
 	"learn-linux/internal/shell"
 	"learn-linux/internal/store"
 	"learn-linux/internal/term"
+	"learn-linux/internal/tips"
 	"learn-linux/internal/ui"
 )
 
@@ -36,6 +37,7 @@ type Config struct {
 	I18N           contract.I18N
 	UI             contract.UIRenderer
 	Curriculum     contract.Curriculum
+	Tips           contract.TipProvider
 	PanicSeconds   int
 	PanicSecondsSet bool
 	InitialChapter int
@@ -52,6 +54,7 @@ type App struct {
 	i18n       contract.I18N
 	ui         contract.UIRenderer
 	curriculum contract.Curriculum
+	tips       contract.TipProvider
 	shell      contract.ShellEngine
 	out        *rawCRLFWriter
 
@@ -125,6 +128,11 @@ func New(cfg Config) (*App, error) {
 		cur = curriculum.NewEngine()
 	}
 
+	tipProvider := cfg.Tips
+	if tipProvider == nil {
+		tipProvider = tips.NewProvider()
+	}
+
 	panicSec := 5
 	if cfg.PanicSecondsSet {
 		panicSec = cfg.PanicSeconds
@@ -147,6 +155,7 @@ func New(cfg Config) (*App, error) {
 		i18n:         bundle,
 		ui:           renderer,
 		curriculum:   cur,
+		tips:         tipProvider,
 		out:          &rawCRLFWriter{term: t},
 		progress:     prog,
 		chapterID:    chapterID,
@@ -223,7 +232,7 @@ func (a *App) Run(ctx context.Context) error {
 	if !ok {
 		meta = contract.ChapterMeta{ID: a.chapterID}
 	}
-	a.writeText(a.ui.RenderMOTD(a.i18n, meta, len(a.progress.CompletedChapters), len(a.curriculum.Chapters()), width))
+	a.writeText(a.ui.RenderMOTD(a.i18n, meta, len(a.progress.CompletedChapters), len(a.curriculum.Chapters()), a.pickTip(a.chapterID), width))
 	a.writeText("\n")
 
 	for {
@@ -289,7 +298,7 @@ func (a *App) Run(ctx context.Context) error {
 				if m, ok := a.curriculum.ChapterMeta(a.chapterID); ok {
 					a.writeText("\n" + a.ui.RenderResetDone(a.i18n, m) + "\n")
 					if a.chapterID > 0 {
-						st := a.curriculum.Evaluate(a.chapterID, a.shell.VFS(), a.shell.Env(), a.chapterHistory, contract.CommandRecord{})
+						st := a.missionState()
 						a.writeText(a.ui.RenderMission(a.i18n, st, w) + "\n")
 					}
 				}
@@ -347,7 +356,7 @@ func (a *App) handleTutorialAction(action contract.TutorialAction) (int, error) 
 			a.writeBlock(a.ui.RenderSandboxBanner(a.i18n, w))
 			return 0, nil
 		}
-		st := a.curriculum.Evaluate(a.chapterID, a.shell.VFS(), a.shell.Env(), a.chapterHistory, contract.CommandRecord{})
+		st := a.missionState()
 		a.writeBlock(a.ui.RenderMission(a.i18n, st, w))
 		return 0, nil
 
@@ -374,7 +383,7 @@ func (a *App) handleTutorialAction(action contract.TutorialAction) (int, error) 
 			a.writeBlock(a.ui.RenderSandboxBanner(a.i18n, w))
 			return 0, nil
 		}
-		st := a.curriculum.Evaluate(a.chapterID, a.shell.VFS(), a.shell.Env(), a.chapterHistory, contract.CommandRecord{})
+		st := a.missionState()
 		a.writeBlock(a.ui.RenderMission(a.i18n, st, w))
 		if st.AllPassed {
 			if !a.chapterClearedInSession {
@@ -488,9 +497,22 @@ func (a *App) switchStage(id int) (int, error) {
 		a.writeBlock(a.ui.RenderSandboxBanner(a.i18n, w))
 		return 0, nil
 	}
-	st := a.curriculum.Evaluate(a.chapterID, a.shell.VFS(), a.shell.Env(), a.chapterHistory, contract.CommandRecord{})
+	st := a.missionState()
 	a.writeBlock(a.ui.RenderMission(a.i18n, st, w))
 	return 0, nil
+}
+
+func (a *App) pickTip(chapterID int) string {
+	if a.tips == nil {
+		return ""
+	}
+	return a.tips.PickTip(chapterID)
+}
+
+func (a *App) missionState() contract.ChapterState {
+	st := a.curriculum.Evaluate(a.chapterID, a.shell.VFS(), a.shell.Env(), a.chapterHistory, contract.CommandRecord{})
+	st.TipKey = a.pickTip(a.chapterID)
+	return st
 }
 
 func (a *App) reloadStage(id int) error {

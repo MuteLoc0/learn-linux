@@ -1,14 +1,56 @@
 {
-  "motd.os_name": "LearnLinux 虚拟终端 v1.0 (交互式 Linux 命令行实战环境)",
-  "motd.welcome": "欢迎来到 LearnLinux！所有文件操作均在内存虚拟文件系统中运行，零风险、随时可重置，放心动手敲命令。",
+  "motd.os_name": "LearnLinux v1.0",
+  "motd.welcome": "欢迎来到LearnLinux，一个虚拟化的终端界面，不会影响任何宿主机文件。",
   "motd.progress": "学习进度：已通关 %d / %d 章",
-  "motd.quick_cmds": "快捷命令：mission (查看任务) | hint (获取提示) | check (检查进度) | chapter (切换章节) | man <命令> (查手册) | help (帮助)",
-  "motd.tip_tab": "小技巧：按 Tab 键自动补全命令和路径，按 ↑ / ↓ 翻阅历史命令，Ctrl+L 清屏。",
-  "motd.tip_lang": "语言切换：输入 'lang en' 切换至英文界面，输入 'lang zh' 切回中文。",
+  "motd.quick_cmds": "快捷命令：mission (查看任务) | hint (获取提示) | check (检查进度) | chapter (切换章节) | man <命令> (查手册) | help (帮助) | exit (退出)",
 
   "ui.exit.goodbye": "学习进度已自动保存。下次见，继续精进 Linux 命令行技能！",
   "ui.term.fallback_notice": "当前终端不支持原始模式，已自动切换为标准行输入模式（Tab 补全与交互式界面将受限）。",
   "ui.cmd.not_found_tip": "未找到命令 '%s'。输入 'help' 查看可用命令，或输入 'man' 浏览内置命令手册。",
+
+  "ui.tips.prefix": "tips: ",
+  "ui.tips.global.language": "输入 lang en 切换到英文，输入 lang zh 切回中文。",
+  "ui.tips.global.tab": "按 Tab 补全命令名和路径。",
+  "ui.tips.global.history": "按 ↑ 或 ↓ 翻阅历史命令。",
+  "ui.tips.global.clear": "输入 clear 或按 Ctrl+L 清屏。",
+  "ui.tips.global.manual": "用 man <命令> 查看内置手册里的选项和示例，试试 man grep。",
+  "ui.tips.global.hint": "在课程中遇到困难时，输入 hint 逐步查看本章提示。",
+  "ui.tips.global.reset": "输入 reset 恢复当前章节或沙盒的初始文件。",
+  "ui.tips.global.cursor": "按 Ctrl+A 跳到行首，按 Ctrl+E 跳到行尾。",
+
+  "ui.tips.ch1.cd_previous": "用 cd - 返回上一次所在的目录。",
+  "ui.tips.ch1.tree_depth": "用 tree -L 2 只查看起始目录下的两层内容。",
+  "ui.tips.ch1.readable_size": "用 ls -lh 查看文件大小，较大的数值会用 K、M 等单位显示。",
+
+  "ui.tips.ch2.touch_time": "对已有文件运行 touch 会更新时间戳，保留原有内容。",
+  "ui.tips.ch2.verbose_transfer": "给 cp 或 mv 加上 -v，可查看每次操作的源路径和目标路径。",
+  "ui.tips.ch2.relative_link": "符号链接的相对目标路径以链接所在的目录为起点。",
+
+  "ui.tips.ch3.less_matches": "在 less 中，按 n 跳到下一处搜索结果，按 N 跳到上一处。",
+  "ui.tips.ch3.preview_lines": "head 和 tail 默认显示 10 行，可用 -n 指定行数。",
+  "ui.tips.ch3.nano_exit": "在 nano 中有未保存的改动时，按 Ctrl+X 会询问是否保存。",
+
+  "ui.tips.ch4.find_files": "给 find 加上 -type f，只查找普通文件。",
+  "ui.tips.ch4.grep_literal": "grep -F 按字面匹配文本，点号只匹配点号本身。",
+  "ui.tips.ch4.uniq_count": "uniq -c 统计相邻相同行的次数，先排序就能统计所有重复项。",
+
+  "ui.tips.ch5.preview_pipe": "先在屏幕上预览管道输出，确认后再用 > 保存。",
+  "ui.tips.ch5.redirect_in": "试试 wc -l < file，把文件作为输入来统计行数。",
+  "ui.tips.ch5.redirect_out": "用 > 重定向时，将结果写入另一个文件以保留输入文件。",
+  "ui.tips.ch5.chain_status": "前一条命令成功时，&& 才执行下一条。|| 则在失败时执行。",
+
+  "ui.tips.ch6.owner_execute": "chmod u+x 为文件所有者添加执行权限。",
+  "ui.tips.ch6.env": "用 env 查看脚本能继承的环境变量。",
+  "ui.tips.ch6.mode_digits": "chmod 的每个数字由权限值相加得到，读为 4，写为 2，执行为 1。",
+
+  "ui.tips.ch7.tar_list": "用 tar -tzf archive.tar.gz 查看归档里的文件，无需解包。",
+  "ui.tips.ch7.make_dry_run": "make -n 可以预览构建命令，无需实际执行。",
+  "ui.tips.ch7.gzip_keep": "gzip -k file 生成 file.gz，并保留原文件。",
+
+  "ui.tips.ch8.log_line": "用 grep -n 预览日志匹配结果，查看它们的原始行号。",
+  "ui.tips.ch8.verify_config": "编辑配置后，用 cat 确认文件实际保存的内容。",
+  "ui.tips.ch8.tar_base": "用 tar -C dir 打包时，指定以 dir 为起点的相对路径。",
+  "ui.tips.ch8.verify_build": "打包前先运行构建好的程序，检查它的输出。",
 
   "ui.mission.header": "第 %d 章：%s",
   "ui.mission.commands": "核心命令",
