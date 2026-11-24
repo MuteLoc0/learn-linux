@@ -13,7 +13,23 @@ English | [中文文档](doc/README_zh.md)
 
 ## Quick Start
 
-Pre-built, ready-to-run binaries for macOS, Linux, and Windows are available on the [GitHub Releases](https://github.com/MuteLoc0/learn-linux/releases) page—download the binary for your platform and run it directly in your terminal.
+Pre-built, ready-to-run binaries for macOS, Linux, and Windows are available on the [GitHub Releases](https://github.com/MuteLoc0/learn-linux/releases) page. Download the binary for your platform and launch it from a terminal:
+
+- **macOS (Apple Silicon / Intel)**:
+  ```bash
+  chmod +x ./learn-linux-darwin-arm64   # Intel Mac: learn-linux-darwin-amd64
+  ./learn-linux-darwin-arm64
+  ```
+  > **macOS Gatekeeper Note**: On first launch, macOS may block the unsigned binary with *"Apple could not verify ... is free of malware"*. Open **System Settings → Privacy & Security → Security**, click **Allow Anyway** (or run `xattr -d com.apple.quarantine ./learn-linux-darwin-arm64`), then run the command again. For macOS users, building from source (see [How to Build](#how-to-build)) is also recommended to avoid Gatekeeper prompts.
+- **Linux (x86_64)**:
+  ```bash
+  chmod +x ./learn-linux-linux-amd64
+  ./learn-linux-linux-amd64
+  ```
+- **Windows (x86_64)**:
+  ```powershell
+  .\learn-linux-windows-amd64.exe
+  ```
 
 Progress, language preference, and command history are automatically saved under `~/.learn-linux-cli`.
 

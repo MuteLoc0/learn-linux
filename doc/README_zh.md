@@ -13,7 +13,23 @@
 
 ## 快速开始
 
-前往 [GitHub Releases](https://github.com/MuteLoc0/learn-linux/releases) 下载对应平台（macOS / Linux / Windows）的预编译可执行文件，即可直接在终端运行。
+前往 [GitHub Releases](https://github.com/MuteLoc0/learn-linux/releases) 下载对应平台的可执行文件后，在终端中执行：
+
+- **macOS（Apple Silicon / Intel）**：
+  ```bash
+  chmod +x ./learn-linux-darwin-arm64   # Intel Mac 请使用 learn-linux-darwin-amd64
+  ./learn-linux-darwin-arm64
+  ```
+  > **macOS 安全提示**：首次运行未签名程序时，系统可能提示“未打开……Apple 无法验证是否包含恶意软件”。请前往 **系统设置 → 隐私与安全性 → 安全性**，点击 **仍然允许**（或执行 `xattr -d com.apple.quarantine ./learn-linux-darwin-arm64`），然后重新运行即可。也建议 macOS 用户直接参考下方 [如何编译](#如何编译) 自行编译运行，可避免该安全拦截。
+- **Linux（x86_64）**：
+  ```bash
+  chmod +x ./learn-linux-linux-amd64
+  ./learn-linux-linux-amd64
+  ```
+- **Windows（x86_64）**：
+  ```powershell
+  .\learn-linux-windows-amd64.exe
+  ```
 
 学习进度、语言偏好与命令历史等存档文件保存在 `~/.learn-linux-cli` 目录中。
 
